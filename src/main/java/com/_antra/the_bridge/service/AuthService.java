@@ -9,5 +9,7 @@ public interface AuthService {
     void verifyEmail(VerifyEmailRequest request);
     void resendVerificationCode(String email);
     AuthResponse oauthLogin(OAuthLoginRequest request);
+    void forgotPassword(String email);
+    void resetPassword(ResetPasswordRequest request);
 }
 

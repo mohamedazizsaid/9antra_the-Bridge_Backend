@@ -23,12 +23,12 @@ public class AuthController {
     }
 
     // ─── REGISTER (multipart: data + optional avatar) ────────────────────────
-    @PostMapping(value = "/register", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(value = "/register", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE,
+            MediaType.APPLICATION_JSON_VALUE })
     @Operation(summary = "Inscrire un stagiaire", description = "Crée un compte STAGIAIRE et envoie un email de vérification. Avatar uploadé sur Cloudinary.")
     public ResponseEntity<AuthResponse> register(
             @RequestPart("data") RegisterRequest request,
-            @RequestPart(value = "avatar", required = false) MultipartFile avatar
-    ) {
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
         return ResponseEntity.ok(authService.register(request, avatar));
     }
 
@@ -44,7 +44,8 @@ public class AuthController {
     @Operation(summary = "Vérifier l'email", description = "Valide le code à 6 chiffres reçu par email.")
     public ResponseEntity<Map<String, String>> verifyEmail(@RequestBody VerifyEmailRequest request) {
         authService.verifyEmail(request);
-        return ResponseEntity.ok(Map.of("message", "Email vérifié avec succès. Vous pouvez maintenant vous connecter."));
+        return ResponseEntity
+                .ok(Map.of("message", "Email vérifié avec succès. Vous pouvez maintenant vous connecter."));
     }
 
     // ─── RESEND CODE ──────────────────────────────────────────────────────────
@@ -53,6 +54,22 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> resendCode(@RequestBody Map<String, String> body) {
         authService.resendVerificationCode(body.get("email"));
         return ResponseEntity.ok(Map.of("message", "Un nouveau code a été envoyé à votre adresse email."));
+    }
+
+    // ─── FORGOT PASSWORD ─────────────────────────────────────────────────────
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Demander une réinitialisation", description = "Envoie un code de réinitialisation au stagiaire.")
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> body) {
+        authService.forgotPassword(body.get("email"));
+        return ResponseEntity.ok(Map.of("message", "Un code de réinitialisation a été envoyé à votre adresse email."));
+    }
+
+    // ─── RESET PASSWORD ──────────────────────────────────────────────────────
+    @PostMapping("/reset-password")
+    @Operation(summary = "Réinitialiser le mot de passe", description = "Vérifie le code et met à jour le mot de passe.")
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Mot de passe réinitialisé avec succès."));
     }
 
     // ─── OAUTH LOGIN (Google / Facebook) ──────────────────────────────────────
@@ -69,4 +86,3 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Déconnexion réussie."));
     }
 }
-

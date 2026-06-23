@@ -1,7 +1,9 @@
 package com._antra.the_bridge.service;
 
+import com._antra.the_bridge.exception.CustomException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -34,7 +36,7 @@ public class OAuthService {
             info.put("providerId", getTextSafe(json, "sub"));
             return info;
         } catch (IOException e) {
-            throw new RuntimeException("Token Google invalide: " + e.getMessage(), e);
+            throw new CustomException("Token Google invalide: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -59,7 +61,7 @@ public class OAuthService {
             }
             return info;
         } catch (IOException e) {
-            throw new RuntimeException("Token Facebook invalide: " + e.getMessage(), e);
+            throw new CustomException("Token Facebook invalide: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
     }
 
