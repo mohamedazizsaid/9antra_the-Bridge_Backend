@@ -29,10 +29,10 @@ public class OAuthService {
             String endpoint = "https://www.googleapis.com/oauth2/v3/userinfo";
             JsonNode json = fetchJson(endpoint, accessToken);
             Map<String, String> info = new HashMap<>();
-            info.put("email",      getTextSafe(json, "email"));
-            info.put("firstName",  getTextSafe(json, "given_name"));
-            info.put("lastName",   getTextSafe(json, "family_name"));
-            info.put("avatar",     getTextSafe(json, "picture"));
+            info.put("email", getTextSafe(json, "email"));
+            info.put("firstName", getTextSafe(json, "given_name"));
+            info.put("lastName", getTextSafe(json, "family_name"));
+            info.put("avatar", getTextSafe(json, "picture"));
             info.put("providerId", getTextSafe(json, "sub"));
             return info;
         } catch (IOException e) {
@@ -45,13 +45,14 @@ public class OAuthService {
      */
     public Map<String, String> verifyFacebookToken(String accessToken) {
         try {
-            String endpoint = "https://graph.facebook.com/me?fields=id,first_name,last_name,email,picture.type(large)&access_token=" + accessToken;
+            String endpoint = "https://graph.facebook.com/me?fields=id,first_name,last_name,email,picture.type(large)&access_token="
+                    + accessToken;
             // Facebook uses query-param auth, no Bearer header
             JsonNode json = fetchJsonNoAuth(endpoint);
             Map<String, String> info = new HashMap<>();
-            info.put("email",      getTextSafe(json, "email"));
-            info.put("firstName",  getTextSafe(json, "first_name"));
-            info.put("lastName",   getTextSafe(json, "last_name"));
+            info.put("email", getTextSafe(json, "email"));
+            info.put("firstName", getTextSafe(json, "first_name"));
+            info.put("lastName", getTextSafe(json, "last_name"));
             info.put("providerId", getTextSafe(json, "id"));
             // picture.data.url
             if (json.has("picture") && json.get("picture").has("data")) {
@@ -91,7 +92,8 @@ public class OAuthService {
     }
 
     private String getTextSafe(JsonNode node, String field) {
-        if (node == null || !node.has(field)) return "";
+        if (node == null || !node.has(field))
+            return "";
         return node.get(field).asText("");
     }
 }

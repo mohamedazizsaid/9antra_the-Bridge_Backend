@@ -4,6 +4,7 @@ import com._antra.the_bridge.dto.*;
 import com._antra.the_bridge.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +18,15 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final String googleClientId;
+    private final String facebookAppId;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService,
+            @Value("${spring.security.oauth2.client.registration.google.client-id:}") String googleClientId,
+            @Value("${spring.security.oauth2.client.registration.facebook.client-id:}") String facebookAppId) {
         this.authService = authService;
+        this.googleClientId = googleClientId;
+        this.facebookAppId = facebookAppId;
     }
 
     // ─── REGISTER (multipart: data + optional avatar) ────────────────────────
@@ -70,6 +77,15 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok(Map.of("message", "Mot de passe réinitialisé avec succès."));
+    }
+
+    // ─── OAUTH CONFIG ────────────────────────────────────────────────────────
+    @GetMapping("/oauth-config")
+    @Operation(summary = "Configuration OAuth publique", description = "Expose les identifiants publics Google/Facebook pour initialiser les SDK frontend.")
+    public ResponseEntity<Map<String, String>> oauthConfig() {
+        return ResponseEntity.ok(Map.of(
+                "googleClientId", googleClientId == null ? "" : googleClientId,
+                "facebookAppId", facebookAppId == null ? "" : facebookAppId));
     }
 
     // ─── OAUTH LOGIN (Google / Facebook) ──────────────────────────────────────

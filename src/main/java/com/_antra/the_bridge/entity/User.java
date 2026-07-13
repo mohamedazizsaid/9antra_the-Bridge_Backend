@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Data
@@ -44,6 +45,34 @@ public class User {
     private String authProvider = "LOCAL";
     // OAuth2 provider user ID
     private String providerId;
+
+    @OneToMany(mappedBy = "student")
+    private List<Enrollment> enrollments;
+
+    @OneToMany(mappedBy = "student")
+    private List<Attendance> attendances;
+
+    @OneToMany(mappedBy = "student")
+    private List<Evaluation> evaluations;
+
+    @OneToMany(mappedBy = "trainer")
+    private List<Evaluation> givenEvaluations;
+
+    @OneToMany(mappedBy = "student")
+    private List<Progression> progressions;
+
+    @OneToMany(mappedBy = "student")
+    private List<Certificate> certificates;
+
+    @OneToMany(mappedBy = "user")
+    private List<Notification> notifications;
+
+    @OneToMany(mappedBy = "user")
+    private List<AuditLog> auditLogs;
+
+    @ManyToMany(mappedBy = "trainers")
+    private List<Formation> assignedFormations;
+
 
     @PrePersist
     protected void onCreate() {
