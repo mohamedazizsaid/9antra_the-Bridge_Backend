@@ -38,4 +38,6 @@ public class Payment {
     @ManyToOne
     @JoinColumn(name = "phase_id")
     private Phase phase;
+
+    private LocalDate dueDate;
 }

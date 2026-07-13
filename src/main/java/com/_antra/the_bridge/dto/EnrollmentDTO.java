@@ -10,7 +10,7 @@ import java.time.LocalDate;
 public class EnrollmentDTO {
     private Long id;
     private LocalDate enrollmentDate;
-    private int studentId;
+    private Integer studentId;
     private String studentFirstName;
     private String studentLastName;
     private String studentEmail;

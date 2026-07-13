@@ -13,7 +13,7 @@ public class ProgressionDTO {
     private boolean pedagogicalValidated;
     private boolean unlocked;
     private LocalDate validationDate;
-    private int studentId;
+    private Integer studentId;
     private Long phaseId;
     private String phaseTitle;
 }

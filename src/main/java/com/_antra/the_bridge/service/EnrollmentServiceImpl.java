@@ -2,12 +2,12 @@ package com._antra.the_bridge.service;
 
 import com._antra.the_bridge.dto.DTOHelper;
 import com._antra.the_bridge.dto.EnrollmentDTO;
-import com._antra.the_bridge.entity.Enrollment;
-import com._antra.the_bridge.entity.Formation;
-import com._antra.the_bridge.entity.User;
+import com._antra.the_bridge.entity.*;
+import com._antra.the_bridge.enumType.PaymentStatus;
 import com._antra.the_bridge.exception.CustomException;
 import com._antra.the_bridge.repository.EnrollmentRepository;
 import com._antra.the_bridge.repository.FormationRepository;
+import com._antra.the_bridge.repository.PaymentRepository;
 import com._antra.the_bridge.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,13 +22,16 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final FormationRepository formationRepository;
+    private final PaymentRepository paymentRepository;
 
     public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepository,
                                  UserRepository userRepository,
-                                 FormationRepository formationRepository) {
+                                 FormationRepository formationRepository,
+                                 PaymentRepository paymentRepository) {
         this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
         this.formationRepository = formationRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     @Override
@@ -48,6 +51,24 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollment.setEnrollmentDate(LocalDate.now());
 
         enrollmentRepository.save(enrollment);
+
+        // Generate PENDING payments with staggered due dates for each phase
+        if (formation.getPhases() != null && !formation.getPhases().isEmpty()) {
+            for (Phase phase : formation.getPhases()) {
+                Payment payment = new Payment();
+                payment.setEnrollment(enrollment);
+                payment.setPhase(phase);
+                payment.setAmount(phase.getPrice() != null ? phase.getPrice() : 0.0);
+                payment.setStatus(PaymentStatus.PENDING);
+                
+                int phaseNum = phase.getPhaseOrder();
+                int delay = (phaseNum * 15) - 10; // Phase 1: 5 days, Phase 2: 20 days, etc.
+                payment.setDueDate(LocalDate.now().plusDays(Math.max(1, delay)));
+                
+                paymentRepository.save(payment);
+            }
+        }
+
         return DTOHelper.toDTO(enrollment);
     }
 

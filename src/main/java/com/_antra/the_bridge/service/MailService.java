@@ -2,6 +2,7 @@ package com._antra.the_bridge.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -291,4 +292,76 @@ public class MailService {
         """
         .formatted(firstName, codeBoxes.toString());
   }
+
+  @Async
+  public void sendSessionReminder(String to, String firstName, String messageContent, com._antra.the_bridge.entity.Session session) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+      helper.setFrom(fromEmail, "The Bridge — 9antra");
+      helper.setTo(to);
+      helper.setSubject("⏰ Rappel de séance — The Bridge");
+      
+      String htmlContent = """
+          <!DOCTYPE html>
+          <html>
+          <body style="background-color:#08081A; color:#FFFFFF; font-family:Arial,sans-serif; padding:20px;">
+            <div style="max-width:600px; margin:0 auto; background-color:#0F0F2E; border:1px solid #C62761; border-radius:12px; padding:30px;">
+              <h2 style="color:#F5A623;">Rappel de Cours</h2>
+              <p>Bonjour %s,</p>
+              <p>%s</p>
+              <p>Date : %s à %s</p>
+              <hr style="border-color:#C62761;"/>
+              <p style="font-size:11px; color:#8888AA;">L'équipe The Bridge — 9antra</p>
+            </div>
+          </body>
+          </html>
+          """.formatted(firstName, messageContent, session.getSessionDate().toString(), session.getStartTime().toString());
+
+      helper.setText(htmlContent, true);
+      mailSender.send(message);
+    } catch (Exception e) {
+      log.error("Failed to send session email reminder to {}", to, e);
+    }
+  }
+
+  @Async
+  public void sendPaymentReminder(String to, String firstName, String phaseTitle, Double amount, LocalDate dueDate, int daysRemaining) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+      helper.setFrom(fromEmail, "The Bridge — 9antra");
+      helper.setTo(to);
+      helper.setSubject("⚠️ Rappel de paiement — Échéance dans " + daysRemaining + " jours");
+
+      String htmlContent = """
+          <!DOCTYPE html>
+          <html>
+          <body style="background-color:#08081A; color:#FFFFFF; font-family:Arial,sans-serif; padding:20px;">
+            <div style="max-width:600px; margin:0 auto; background-color:#0F0F2E; border:1px solid #F5A623; border-radius:12px; padding:30px;">
+              <h2 style="color:#F5A623; text-align:center;">⚠️ Échéance de paiement</h2>
+              <p>Bonjour %s,</p>
+              <p>Ceci est un rappel concernant le paiement de votre formation pour la phase : <strong>%s</strong>.</p>
+              <div style="background-color:#1A1A3E; border-left:4px solid #C62761; padding:15px; margin:20px 0; border-radius:4px;">
+                <p style="margin:5px 0;"><strong>Montant :</strong> %s TND</p>
+                <p style="margin:5px 0;"><strong>Date d'échéance :</strong> %s</p>
+                <p style="margin:5px 0; color:#F5A623;"><strong>Temps restant :</strong> %s jours</p>
+              </div>
+              <p>Veuillez régulariser votre paiement depuis votre espace étudiant afin de continuer à accéder à vos cours en toute sérénité.</p>
+              <hr style="border-color:#C62761; margin-top:20px;"/>
+              <p style="font-size:11px; color:#8888AA; text-align:center;">L'équipe The Bridge — 9antra</p>
+            </div>
+          </body>
+          </html>
+          """.formatted(firstName, phaseTitle, amount, dueDate.toString(), daysRemaining);
+
+      helper.setText(htmlContent, true);
+      mailSender.send(message);
+    } catch (Exception e) {
+      log.error("Failed to send payment email reminder to {}", to, e);
+    }
+  }
 }
+

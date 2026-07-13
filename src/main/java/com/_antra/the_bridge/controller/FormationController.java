@@ -1,16 +1,18 @@
 package com._antra.the_bridge.controller;
 
 import com._antra.the_bridge.dto.FormationDTO;
+import com._antra.the_bridge.dto.PhaseDTO;
+import com._antra.the_bridge.dto.SessionDTO;
 import com._antra.the_bridge.service.FormationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/formations")
 @Tag(name = "Formations", description = "Endpoints pour la gestion des formations")
 public class FormationController {
 
@@ -20,35 +22,75 @@ public class FormationController {
         this.formationService = formationService;
     }
 
-    @GetMapping
+    @GetMapping("/api/formations")
     @Operation(summary = "Liste de toutes les formations")
     public ResponseEntity<List<FormationDTO>> getAllFormations() {
         return ResponseEntity.ok(formationService.getAllFormations());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/api/formations/{id}")
     @Operation(summary = "Détails d'une formation par ID")
     public ResponseEntity<FormationDTO> getFormationById(@PathVariable Long id) {
         return ResponseEntity.ok(formationService.getFormationById(id));
     }
 
-    @GetMapping("/formateur/{formateurId}")
+    @GetMapping("/api/formations/formateur/{formateurId}")
     @Operation(summary = "Formations assignées à un formateur")
     public ResponseEntity<List<FormationDTO>> getFormationsByTrainer(@PathVariable int formateurId) {
         return ResponseEntity.ok(formationService.getFormationsByTrainer(formateurId));
     }
 
-    @GetMapping("/stagiaire/{stagiaireId}")
+    @GetMapping("/api/formations/stagiaire/{stagiaireId}")
     @Operation(summary = "Formations suivies par un stagiaire")
     public ResponseEntity<List<FormationDTO>> getFormationsByStudent(@PathVariable int stagiaireId) {
         return ResponseEntity.ok(formationService.getFormationsByStudent(stagiaireId));
     }
 
-    @GetMapping("/{id}/student/{studentId}")
+    @GetMapping("/api/formations/{id}/student/{studentId}")
     @Operation(summary = "Progression et détails d'une formation pour un stagiaire spécifique")
     public ResponseEntity<FormationDTO> getFormationDetailsForStudent(
             @PathVariable Long id,
             @PathVariable int studentId) {
         return ResponseEntity.ok(formationService.getFormationDetailsForStudent(id, studentId));
     }
+
+    // ─── Creation & Management ────────────────────────────────────────────────
+
+    @PostMapping("/api/formations")
+    @Operation(summary = "Créer une nouvelle formation (avec phases et sessions optionnelles)")
+    public ResponseEntity<FormationDTO> createFormation(@RequestBody FormationDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(formationService.createFormation(dto));
+    }
+
+    @PostMapping("/api/formations/{formationId}/phases")
+    @Operation(summary = "Ajouter une phase à une formation existante")
+    public ResponseEntity<PhaseDTO> addPhaseToFormation(
+            @PathVariable Long formationId,
+            @RequestBody PhaseDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(formationService.addPhaseToFormation(formationId, dto));
+    }
+
+    @PutMapping("/api/formations/{formationId}/trainers")
+    @Operation(summary = "Affecter des formateurs à une formation (liste d'IDs)")
+    public ResponseEntity<FormationDTO> assignTrainers(
+            @PathVariable Long formationId,
+            @RequestBody List<Integer> trainerIds) {
+        return ResponseEntity.ok(formationService.assignTrainers(formationId, trainerIds));
+    }
+
+    @PostMapping("/api/phases/{phaseId}/sessions")
+    @Operation(summary = "Ajouter une session à une phase")
+    public ResponseEntity<SessionDTO> addSessionToPhase(
+            @PathVariable Long phaseId,
+            @RequestBody SessionDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(formationService.addSessionToPhase(phaseId, dto));
+    }
+
+    @PostMapping("/api/sessions/{sessionId}/close")
+    @Operation(summary = "Clôturer une séance — déclenche le check certificat si dernière séance")
+    public ResponseEntity<Void> closeSession(@PathVariable Long sessionId) {
+        formationService.closeSession(sessionId);
+        return ResponseEntity.ok().build();
+    }
 }
+

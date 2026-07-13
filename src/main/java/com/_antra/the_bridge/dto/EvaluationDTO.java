@@ -13,11 +13,11 @@ public class EvaluationDTO {
     private String comment;
     private String skills;
     private LocalDate evaluationDate;
-    private int studentId;
+    private Integer studentId;
     private String studentFirstName;
     private String studentLastName;
     private String studentAvatar;
-    private int trainerId;
+    private Integer trainerId;
     private String trainerFirstName;
     private String trainerLastName;
     private Long phaseId;

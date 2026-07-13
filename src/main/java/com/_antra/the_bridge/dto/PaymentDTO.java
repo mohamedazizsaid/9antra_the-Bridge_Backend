@@ -19,8 +19,9 @@ public class PaymentDTO {
     private Long enrollmentId;
     private Long phaseId;
     private String phaseTitle;
-    private int phaseOrder;
+    private Integer phaseOrder;
     private Long formationId;
     private String formationTitle;
-    private int studentId;
+    private Integer studentId;
+    private LocalDate dueDate;
 }

@@ -81,6 +81,8 @@ public class DTOHelper {
         return AttendanceDTO.builder()
                 .id(attendance.getId())
                 .present(attendance.getPresent())
+                .starRating(attendance.getStarRating())
+                .sessionNote(attendance.getSessionNote())
                 .studentId(attendance.getStudent() != null ? attendance.getStudent().getId() : 0)
                 .studentFirstName(attendance.getStudent() != null ? attendance.getStudent().getFirstName() : null)
                 .studentLastName(attendance.getStudent() != null ? attendance.getStudent().getLastName() : null)
@@ -124,6 +126,7 @@ public class DTOHelper {
                         payment.getEnrollment().getFormation().getTitle() : null)
                 .studentId(payment.getEnrollment() != null && payment.getEnrollment().getStudent() != null ?
                         payment.getEnrollment().getStudent().getId() : 0)
+                .dueDate(payment.getDueDate())
                 .build();
     }
 

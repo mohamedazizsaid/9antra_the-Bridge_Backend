@@ -14,7 +14,7 @@ public class CertificateDTO {
     private String hashValue;
     private String blockchainTransactionHash;
     private LocalDate issueDate;
-    private int studentId;
+    private Integer studentId;
     private String studentFirstName;
     private String studentLastName;
     private Long phaseId;

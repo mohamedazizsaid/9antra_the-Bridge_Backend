@@ -31,4 +31,14 @@ public class CertificateController {
     public ResponseEntity<CertificateDTO> verifyCertificate(@PathVariable String hash) {
         return ResponseEntity.ok(certificateService.verifyCertificate(hash));
     }
+
+    @GetMapping("/download/{certificateNumber}")
+    @Operation(summary = "Télécharger le certificat en format PDF professionnel")
+    public ResponseEntity<byte[]> downloadCertificate(@PathVariable String certificateNumber) {
+        byte[] pdfBytes = certificateService.downloadCertificatePdf(certificateNumber);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + certificateNumber + ".pdf")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
 }

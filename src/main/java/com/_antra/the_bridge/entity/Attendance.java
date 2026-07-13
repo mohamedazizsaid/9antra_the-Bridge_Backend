@@ -15,6 +15,13 @@ public class Attendance {
 
     private Boolean present;
 
+    /** Star rating given by formateur at this session (1-5), null if not evaluated */
+    private Integer starRating;
+
+    /** Quick note from formateur for this student at this session */
+    @Column(length = 500)
+    private String sessionNote;
+
     @ManyToOne
     @JoinColumn(name = "student_id")
     private User student;

@@ -8,4 +8,6 @@ public interface CertificateService {
     List<CertificateDTO> getCertificatesByStudent(int studentId);
     CertificateDTO verifyCertificate(String hash);
     CertificateDTO generateCertificate(int studentId, Long phaseId);
+    byte[] downloadCertificatePdf(String certificateNumber);
 }
+

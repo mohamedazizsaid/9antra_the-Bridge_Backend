@@ -63,7 +63,15 @@ public class AttendanceServiceImpl implements AttendanceService {
                 attendance.setSession(session);
             }
             attendance.setPresent(dto.getPresent());
+            // Persist star rating and note if provided
+            if (dto.getStarRating() != null) {
+                attendance.setStarRating(dto.getStarRating());
+            }
+            if (dto.getSessionNote() != null) {
+                attendance.setSessionNote(dto.getSessionNote());
+            }
             attendanceRepository.save(attendance);
         }
     }
 }
+
