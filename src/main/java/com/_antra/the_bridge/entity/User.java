@@ -1,4 +1,4 @@
-package com._antra.the_bridge.entity;
+﻿package com._antra.the_bridge.entity;
 
 import com._antra.the_bridge.enumType.Role;
 import com._antra.the_bridge.enumType.Status;
@@ -40,6 +40,7 @@ public class User {
     // Email verification
     private String verificationCode;
     private boolean emailVerified = false;
+    private boolean mustChangePassword = false;
 
     // OAuth2 provider (LOCAL, GOOGLE, FACEBOOK)
     private String authProvider = "LOCAL";
@@ -84,4 +85,5 @@ public class User {
         }
     }
 }
+
 

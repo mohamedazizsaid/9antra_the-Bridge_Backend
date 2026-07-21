@@ -470,6 +470,52 @@ public class MailService {
         """.formatted(firstName, lastName, phaseTitle, formationTitle,
             certNumber, issueDate, blockchainHash);
   }
+
+  @Async
+  public void sendFormateurWelcomeEmail(String to, String firstName, String lastName, String tempPassword) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+      helper.setFrom(fromEmail, "The Bridge — 9antra");
+      helper.setTo(to);
+      helper.setSubject("🎓 Bienvenue sur The Bridge — Vos identifiants d'accès");
+      helper.setText("""
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head><meta charset="UTF-8"><title>Bienvenue Formateur — The Bridge</title></head>
+          <body style="margin:0;padding:0;background-color:#08081A;font-family:'Segoe UI',Arial,sans-serif;">
+            <div style="max-width:600px;margin:0 auto;background:#0F0F2E;border-radius:16px;overflow:hidden;border:1px solid rgba(198,39,97,0.3);">
+              <div style="background:linear-gradient(135deg,#C62761,#8B1A44,#F5A623);padding:40px;text-align:center;">
+                <h1 style="color:white;margin:0;font-size:26px;font-weight:800;">The Bridge — 9antra</h1>
+                <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:12px;letter-spacing:3px;text-transform:uppercase;">Espace Formateur</p>
+              </div>
+              <div style="padding:40px;">
+                <h2 style="color:#FFFFFF;font-size:22px;margin:0 0 16px;">Bienvenue %s %s 👋</h2>
+                <p style="color:#8888AA;font-size:14px;line-height:1.8;margin:0 0 24px;">
+                  Un compte formateur a été créé pour vous sur <strong style="color:#C62761;">The Bridge</strong>.
+                  Vous pouvez accéder à la plateforme avec les identifiants ci-dessous.
+                </p>
+                <div style="background:#1A1A3E;border:1px solid rgba(198,39,97,0.3);border-radius:12px;padding:24px;margin:0 0 24px;">
+                  <p style="color:#A0A0C8;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;">Email</p>
+                  <p style="color:#FFFFFF;font-size:16px;font-weight:700;font-family:monospace;margin:0 0 16px;">%s</p>
+                  <p style="color:#A0A0C8;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0 0 8px;">Mot de passe temporaire</p>
+                  <p style="color:#F5A623;font-size:16px;font-weight:700;font-family:monospace;margin:0;">%s</p>
+                </div>
+                <div style="background:rgba(245,166,35,0.08);border-left:4px solid #F5A623;padding:16px;border-radius:4px;">
+                  <p style="color:#F5A623;font-size:12px;font-weight:700;margin:0 0 4px;">⚠️ Important</p>
+                  <p style="color:#8888AA;font-size:13px;margin:0;">Vous serez invité à changer votre mot de passe lors de votre première connexion.</p>
+                </div>
+              </div>
+              <div style="background:#060618;padding:24px;text-align:center;border-top:1px solid #1A1A3E;">
+                <p style="color:#444466;font-size:11px;margin:0;">© 2026 9antra • The Bridge</p>
+              </div>
+            </div>
+          </body>
+          </html>
+          """.formatted(firstName, lastName, to, tempPassword), true);
+      mailSender.send(message);
+    } catch (Exception e) {
+      log.error("Failed to send formateur welcome email to {}", to, e);
+    }
+  }
 }
-
-

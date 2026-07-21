@@ -29,6 +29,15 @@ public class EnrollmentController {
         ));
     }
 
+    @DeleteMapping("/student/{studentId}/formation/{formationId}")
+    @Operation(summary = "Désinscrire un stagiaire d'une formation")
+    public ResponseEntity<Void> unenrollStudent(
+            @PathVariable int studentId,
+            @PathVariable Long formationId) {
+        enrollmentService.unenrollStudent(studentId, formationId);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/formation/{formationId}")
     @Operation(summary = "Liste des inscriptions pour une formation")
     public ResponseEntity<List<EnrollmentDTO>> getEnrollmentsByFormation(@PathVariable Long formationId) {

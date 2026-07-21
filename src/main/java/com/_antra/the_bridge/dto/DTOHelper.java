@@ -1,4 +1,4 @@
-package com._antra.the_bridge.dto;
+﻿package com._antra.the_bridge.dto;
 
 import com._antra.the_bridge.entity.*;
 
@@ -21,6 +21,7 @@ public class DTOHelper {
                 .createdAt(user.getCreatedAt())
                 .lastActivity(user.getLastActivity())
                 .authProvider(user.getAuthProvider())
+                .mustChangePassword(user.isMustChangePassword())
                 .build();
     }
 
@@ -201,3 +202,4 @@ public class DTOHelper {
                 .build();
     }
 }
+

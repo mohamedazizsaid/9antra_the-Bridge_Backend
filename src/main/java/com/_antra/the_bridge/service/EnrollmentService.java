@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface EnrollmentService {
     EnrollmentDTO enrollStudent(int studentId, Long formationId);
+    void unenrollStudent(int studentId, Long formationId);
     List<EnrollmentDTO> getEnrollmentsByFormation(Long formationId);
     List<EnrollmentDTO> getEnrollmentsByStudent(int studentId);
 }

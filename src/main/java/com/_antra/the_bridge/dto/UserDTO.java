@@ -1,4 +1,4 @@
-package com._antra.the_bridge.dto;
+﻿package com._antra.the_bridge.dto;
 
 import com._antra.the_bridge.enumType.Role;
 import com._antra.the_bridge.enumType.Status;
@@ -26,4 +26,7 @@ public class UserDTO {
     private LocalDate createdAt;
     private LocalDate lastActivity;
     private String authProvider;
+    private boolean mustChangePassword;
+    private String password; // Only used for formateur creation, never returned
+    private String specialty;
 }
