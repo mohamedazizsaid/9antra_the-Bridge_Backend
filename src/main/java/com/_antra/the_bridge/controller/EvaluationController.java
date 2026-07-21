@@ -26,6 +26,12 @@ public class EvaluationController {
         return ResponseEntity.ok(evaluationService.getEvaluationsByStudent(studentId));
     }
 
+    @GetMapping("/trainer/{trainerId}")
+    @Operation(summary = "Historique des évaluations données par un formateur")
+    public ResponseEntity<List<EvaluationDTO>> getEvaluationsByTrainer(@PathVariable int trainerId) {
+        return ResponseEntity.ok(evaluationService.getEvaluationsByTrainer(trainerId));
+    }
+
     @PostMapping
     @Operation(summary = "Enregistrer ou modifier une évaluation de phase")
     public ResponseEntity<EvaluationDTO> saveEvaluation(@RequestBody EvaluationDTO evaluationDTO) {

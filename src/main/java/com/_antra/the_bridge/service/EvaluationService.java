@@ -8,4 +8,5 @@ public interface EvaluationService {
     List<EvaluationDTO> getEvaluationsByStudent(int studentId);
     EvaluationDTO saveEvaluation(EvaluationDTO evaluationDTO);
     List<EvaluationDTO> getEvaluationsByPhase(Long phaseId);
+    List<EvaluationDTO> getEvaluationsByTrainer(int trainerId);
 }

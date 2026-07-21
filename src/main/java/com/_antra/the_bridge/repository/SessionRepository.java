@@ -19,4 +19,12 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     @Query("SELECT s FROM Session s WHERE s.sessionDate = :today ORDER BY s.startTime ASC")
     List<Session> findToday(@Param("today") LocalDate today);
+
+    @Query("SELECT s FROM Session s JOIN s.phase p JOIN p.formation f JOIN f.trainers t " +
+           "WHERE t.id = :trainerId AND s.sessionDate = :today ORDER BY s.startTime ASC")
+    List<Session> findTodayByTrainerId(@Param("trainerId") int trainerId, @Param("today") LocalDate today);
+
+    @Query("SELECT s FROM Session s JOIN s.phase p JOIN p.formation f JOIN f.trainers t " +
+           "WHERE t.id = :trainerId AND s.sessionDate >= :today ORDER BY s.sessionDate ASC, s.startTime ASC")
+    List<Session> findUpcomingByTrainerId(@Param("trainerId") int trainerId, @Param("today") LocalDate today);
 }

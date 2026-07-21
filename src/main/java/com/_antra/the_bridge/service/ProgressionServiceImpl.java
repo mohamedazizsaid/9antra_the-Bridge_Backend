@@ -28,6 +28,7 @@ public class ProgressionServiceImpl implements ProgressionService {
     private final CertificateService certificateService;
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final MailService mailService;
 
     public ProgressionServiceImpl(ProgressionRepository progressionRepository,
                                   UserRepository userRepository,
@@ -38,7 +39,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                                   SessionRepository sessionRepository,
                                   CertificateService certificateService,
                                   NotificationRepository notificationRepository,
-                                  SimpMessagingTemplate messagingTemplate) {
+                                  SimpMessagingTemplate messagingTemplate,
+                                  MailService mailService) {
         this.progressionRepository = progressionRepository;
         this.userRepository = userRepository;
         this.phaseRepository = phaseRepository;
@@ -49,6 +51,7 @@ public class ProgressionServiceImpl implements ProgressionService {
         this.certificateService = certificateService;
         this.notificationRepository = notificationRepository;
         this.messagingTemplate = messagingTemplate;
+        this.mailService = mailService;
     }
 
     @Override
@@ -121,7 +124,22 @@ public class ProgressionServiceImpl implements ProgressionService {
                 progression.setValidationDate(LocalDate.now());
                 
                 // Issue blockchain certificate
-                certificateService.generateCertificate(studentId, phaseId);
+                com._antra.the_bridge.dto.CertificateDTO cert = certificateService.generateCertificate(studentId, phaseId);
+
+                // Send certificate email to student
+                if (student.getEmail() != null && cert != null) {
+                    String formationTitle = phase.getFormation() != null ? phase.getFormation().getTitle() : "N/A";
+                    mailService.sendCertificateEmail(
+                        student.getEmail(),
+                        student.getFirstName(),
+                        student.getLastName(),
+                        phase.getTitle(),
+                        formationTitle,
+                        cert.getCertificateNumber(),
+                        cert.getBlockchainTransactionHash(),
+                        cert.getIssueDate() != null ? cert.getIssueDate().toString() : LocalDate.now().toString()
+                    );
+                }
 
                 // Create and send notification
                 createAndSendNotification(student, "Certificat disponible 🎓", 

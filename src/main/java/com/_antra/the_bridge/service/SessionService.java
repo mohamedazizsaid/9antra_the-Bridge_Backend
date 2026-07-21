@@ -8,5 +8,7 @@ public interface SessionService {
     List<SessionDTO> getTodaySessions();
     List<SessionDTO> getUpcomingSessions();
     List<SessionDTO> getSessionsByPhase(Long phaseId);
+    List<SessionDTO> getTodaySessionsByTrainer(int trainerId);
+    List<SessionDTO> getUpcomingSessionsByTrainer(int trainerId);
     SessionDTO createSession(SessionDTO sessionDTO);
 }

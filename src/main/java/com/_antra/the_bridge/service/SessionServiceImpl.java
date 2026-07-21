@@ -47,6 +47,20 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
+    public List<SessionDTO> getTodaySessionsByTrainer(int trainerId) {
+        return sessionRepository.findTodayByTrainerId(trainerId, LocalDate.now()).stream()
+                .map(DTOHelper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SessionDTO> getUpcomingSessionsByTrainer(int trainerId) {
+        return sessionRepository.findUpcomingByTrainerId(trainerId, LocalDate.now()).stream()
+                .map(DTOHelper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public SessionDTO createSession(SessionDTO sessionDTO) {
         Phase phase = phaseRepository.findById(sessionDTO.getPhaseId())
                 .orElseThrow(() -> new CustomException("Phase not found", HttpStatus.NOT_FOUND));

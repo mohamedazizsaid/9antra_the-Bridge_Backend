@@ -75,4 +75,11 @@ public class EvaluationServiceImpl implements EvaluationService {
                 .map(DTOHelper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<EvaluationDTO> getEvaluationsByTrainer(int trainerId) {
+        return evaluationRepository.findByTrainerId(trainerId).stream()
+                .map(DTOHelper::toDTO)
+                .collect(Collectors.toList());
+    }
 }

@@ -38,6 +38,18 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.getSessionsByPhase(phaseId));
     }
 
+    @GetMapping("/trainer/{trainerId}/today")
+    @Operation(summary = "Séances d'aujourd'hui pour un formateur")
+    public ResponseEntity<List<SessionDTO>> getTodaySessionsByTrainer(@PathVariable int trainerId) {
+        return ResponseEntity.ok(sessionService.getTodaySessionsByTrainer(trainerId));
+    }
+
+    @GetMapping("/trainer/{trainerId}/upcoming")
+    @Operation(summary = "Prochaines séances pour un formateur")
+    public ResponseEntity<List<SessionDTO>> getUpcomingSessionsByTrainer(@PathVariable int trainerId) {
+        return ResponseEntity.ok(sessionService.getUpcomingSessionsByTrainer(trainerId));
+    }
+
     @PostMapping
     @Operation(summary = "Créer une nouvelle séance")
     public ResponseEntity<SessionDTO> createSession(@RequestBody SessionDTO sessionDTO) {

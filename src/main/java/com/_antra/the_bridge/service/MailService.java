@@ -363,5 +363,113 @@ public class MailService {
       log.error("Failed to send payment email reminder to {}", to, e);
     }
   }
+
+  @org.springframework.scheduling.annotation.Async
+  public void sendCertificateEmail(String to, String firstName, String lastName,
+                                    String phaseTitle, String formationTitle,
+                                    String certificateNumber, String blockchainHash,
+                                    String issueDate) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+      helper.setFrom(fromEmail, "The Bridge — 9antra");
+      helper.setTo(to);
+      helper.setSubject("🏅 Votre Certificat Blockchain — " + phaseTitle + " | The Bridge");
+      helper.setText(buildCertificateEmailHtml(firstName, lastName, phaseTitle, formationTitle,
+              certificateNumber, blockchainHash, issueDate), true);
+
+      mailSender.send(message);
+      log.info("Certificate email sent to {} for phase '{}'", to, phaseTitle);
+    } catch (Exception e) {
+      log.error("Failed to send certificate email to {}", to, e);
+    }
+  }
+
+  private String buildCertificateEmailHtml(String firstName, String lastName,
+                                            String phaseTitle, String formationTitle,
+                                            String certNumber, String blockchainHash,
+                                            String issueDate) {
+    return """
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head><meta charset="UTF-8"><title>Certificat The Bridge</title></head>
+        <body style="margin:0;padding:0;background-color:#08081A;font-family:'Segoe UI',Arial,sans-serif;">
+          <div style="max-width:650px;margin:0 auto;background-color:#08081A;">
+
+            <!-- HERO HEADER -->
+            <div style="background:linear-gradient(135deg,#1A0A2E 0%%,#0D0D2B 50%%,#1A0A1A 100%%);padding:48px 40px;text-align:center;border-bottom:3px solid #C62761;">
+              <div style="display:inline-block;background:linear-gradient(135deg,#C62761,#F5A623);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:8px;">
+                THE BRIDGE
+              </div>
+              <div style="color:#A0A0C8;font-size:11px;text-transform:uppercase;letter-spacing:4px;font-weight:600;">9antra · Formation Professionnelle</div>
+            </div>
+
+            <!-- GOLD BANNER -->
+            <div style="background:linear-gradient(90deg,#C62761,#F5A623,#C62761);padding:14px;text-align:center;">
+              <span style="color:#FFFFFF;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:3px;">🏅 Certificat Blockchain Délivré</span>
+            </div>
+
+            <!-- MAIN CONTENT -->
+            <div style="background:#0F0F2E;padding:48px 40px;">
+
+              <!-- Greeting -->
+              <p style="color:#A0A0C8;font-size:12px;text-transform:uppercase;letter-spacing:3px;font-weight:700;margin:0 0 8px;">Félicitations</p>
+              <h2 style="color:#FFFFFF;font-size:28px;font-weight:800;margin:0 0 24px;">%s %s 🎉</h2>
+
+              <p style="color:#8888AA;font-size:15px;line-height:1.8;margin:0 0 32px;">
+                Vous avez réussi avec succès la phase <strong style="color:#F5A623;">"%s"</strong>
+                du programme <strong style="color:#C62761;">%s</strong>. Votre certificat a été
+                <strong style="color:#FFFFFF;">enregistré sur la blockchain Polygon</strong> et est
+                désormais infalsifiable et vérifiable publiquement.
+              </p>
+
+              <!-- CERTIFICATE CARD -->
+              <div style="background:linear-gradient(135deg,#1A1A3E,#12122E);border:1px solid #C62761;border-radius:16px;padding:32px;margin:0 0 32px;position:relative;">
+                <div style="position:absolute;top:16px;right:20px;background:linear-gradient(135deg,#C62761,#F5A623);color:white;font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:1px;">Certifié Blockchain</div>
+
+                <div style="margin-bottom:20px;">
+                  <span style="color:#A0A0C8;font-size:10px;text-transform:uppercase;letter-spacing:2px;display:block;margin-bottom:4px;">Numéro de certificat</span>
+                  <span style="color:#F5A623;font-size:14px;font-weight:700;font-family:monospace;">%s</span>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                  <span style="color:#A0A0C8;font-size:10px;text-transform:uppercase;letter-spacing:2px;display:block;margin-bottom:4px;">Date d'émission</span>
+                  <span style="color:#FFFFFF;font-size:14px;font-weight:600;">%s</span>
+                </div>
+
+                <div style="background:#08081A;border-radius:8px;padding:12px;margin-top:16px;">
+                  <span style="color:#A0A0C8;font-size:9px;text-transform:uppercase;letter-spacing:2px;display:block;margin-bottom:6px;">Transaction Blockchain (Polygon)</span>
+                  <span style="color:#C62761;font-size:9px;font-family:monospace;word-break:break-all;">%s</span>
+                </div>
+              </div>
+
+              <!-- HOW TO VERIFY -->
+              <div style="background:#1A1A2E;border-left:4px solid #F5A623;padding:20px;border-radius:4px;margin:0 0 32px;">
+                <p style="color:#F5A623;font-size:13px;font-weight:700;margin:0 0 8px;">🔍 Comment vérifier votre certificat ?</p>
+                <p style="color:#8888AA;font-size:13px;margin:0;line-height:1.7;">
+                  Rendez-vous sur <strong style="color:#FFFFFF;">the-bridge.9antra.tn/verify</strong> et entrez votre numéro de certificat.
+                  Votre certificat sera vérifié en temps réel via la blockchain.
+                </p>
+              </div>
+
+              <p style="color:#8888AA;font-size:14px;line-height:1.7;margin:0;">
+                Vous pouvez télécharger votre certificat PDF depuis votre <strong style="color:#C62761;">espace stagiaire</strong> à tout moment. Ce document sera reconnu par les employeurs et les organismes de certification.
+              </p>
+            </div>
+
+            <!-- FOOTER -->
+            <div style="background:#060618;padding:32px 40px;border-top:1px solid #1A1A3E;text-align:center;">
+              <p style="color:#444466;font-size:11px;margin:0 0 8px;">© 2025 The Bridge — 9antra · Formation Professionnelle en Tunisie</p>
+              <p style="color:#333355;font-size:10px;margin:0;">Ce message est envoyé automatiquement. Ne pas répondre à cet email.</p>
+            </div>
+
+          </div>
+        </body>
+        </html>
+        """.formatted(firstName, lastName, phaseTitle, formationTitle,
+            certNumber, issueDate, blockchainHash);
+  }
 }
+
 
