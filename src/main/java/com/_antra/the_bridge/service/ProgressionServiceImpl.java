@@ -142,8 +142,8 @@ public class ProgressionServiceImpl implements ProgressionService {
                 }
 
                 // Create and send notification
-                createAndSendNotification(student, "Certificat disponible 🎓", 
-                        "Félicitations ! Votre certificat pour la phase \"" + phase.getTitle() + "\" a été généré sur la blockchain Polygon.");
+                createAndSendNotification(student, "Certificat disponible ðŸŽ“", 
+                        "FÃ©licitations ! Votre certificat pour la phase \"" + phase.getTitle() + "\" a Ã©tÃ© gÃ©nÃ©rÃ© sur la blockchain Polygon.");
 
                 // Unlock next phase if exists
                 unlockNextPhase(student, phase);
@@ -178,8 +178,8 @@ public class ProgressionServiceImpl implements ProgressionService {
             nextProgression.setUnlocked(true);
             progressionRepository.save(nextProgression);
 
-            createAndSendNotification(student, "Nouvelle phase débloquée 🚀", 
-                    "La phase \"" + nextPhase.getTitle() + "\" est désormais accessible !");
+            createAndSendNotification(student, "Nouvelle phase dÃ©bloquÃ©e ðŸš€", 
+                    "La phase \"" + nextPhase.getTitle() + "\" est dÃ©sormais accessible !");
         }
     }
 
@@ -200,5 +200,24 @@ public class ProgressionServiceImpl implements ProgressionService {
         } catch (Exception e) {
             System.err.println("Failed to send STOMP websocket notification: " + e.getMessage());
         }
+    }
+
+    @Override
+    public java.util.List<com._antra.the_bridge.dto.ProgressionDTO> getProgressionsByStudent(int studentId) {
+        return progressionRepository.findAll().stream()
+                .filter(p -> p.getStudent().getId() == studentId)
+                .map(p -> com._antra.the_bridge.dto.ProgressionDTO.builder()
+                        .id(p.getId())
+                        .studentId(p.getStudent().getId())
+                        .phaseId(p.getPhase().getId())
+                        .formationTitle(p.getPhase().getFormation().getTitle())
+                        .phaseTitle(p.getPhase().getTitle())
+                        .phaseOrder(p.getPhase().getPhaseOrder())
+                        .paymentValidated(p.isPaymentValidated())
+                        .pedagogicalValidated(p.isPedagogicalValidated())
+                        .unlocked(p.isUnlocked())
+                        .validationDate(p.getValidationDate())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
     }
 }

@@ -1,4 +1,4 @@
-﻿package com._antra.the_bridge.repository;
+package com._antra.the_bridge.repository;
 
 import com._antra.the_bridge.entity.AuditLog;
 import org.springframework.data.domain.Page;

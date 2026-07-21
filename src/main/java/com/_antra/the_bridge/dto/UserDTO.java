@@ -1,4 +1,4 @@
-﻿package com._antra.the_bridge.dto;
+package com._antra.the_bridge.dto;
 
 import com._antra.the_bridge.enumType.Role;
 import com._antra.the_bridge.enumType.Status;

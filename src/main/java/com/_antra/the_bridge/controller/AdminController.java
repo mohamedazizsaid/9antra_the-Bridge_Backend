@@ -1,4 +1,4 @@
-﻿package com._antra.the_bridge.controller;
+package com._antra.the_bridge.controller;
 
 import com._antra.the_bridge.dto.UserDTO;
 import com._antra.the_bridge.entity.AuditLog;

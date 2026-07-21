@@ -1,4 +1,4 @@
-package com._antra.the_bridge.config;
+﻿package com._antra.the_bridge.config;
 
 import com._antra.the_bridge.entity.*;
 import com._antra.the_bridge.enumType.PaymentStatus;
@@ -60,9 +60,9 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
-        System.out.println("=== Bridge DataSeeder: Initialisation des données ===");
+        System.out.println("=== Bridge DataSeeder: Initialisation des Données ===");
 
-        // ─── 1. Create Users ─────────────────────────────────────────────────────
+        // â”€â”€â”€ 1. Create Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         createUser("Karim", "Bennani", "karim.bennani@9antra.tn",
                 "admin123", Role.ADMIN, Status.ACTIVE, 40,
                 "https://api.dicebear.com/7.x/initials/svg?seed=KB&backgroundColor=c62761");
@@ -94,33 +94,33 @@ public class DataSeeder implements CommandLineRunner {
                     "https://api.dicebear.com/7.x/initials/svg?seed=HS&backgroundColor=f472b6"),
         };
 
-        // ─── 2. Create Formations ─────────────────────────────────────────────────
-        Formation f1 = createFormation("Développement Full Stack — Spring Boot & Angular",
-                "Maîtrisez l'architecture microservices et le développement full stack moderne avec Spring Boot et Angular.",
+        // â”€â”€â”€ 2. Create Formations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        Formation f1 = createFormation("Développement Full Stack â€” Spring Boot & Angular",
+                "Maîtrisez l'architecture microservices et le Développement full stack moderne avec Spring Boot et Angular.",
                 "Développement Web", 1800.0, List.of(formateur1));
 
         Formation f2 = createFormation("Data Science & Machine Learning avec Python",
                 "Plongez dans le monde de la data science : analyse exploratoire, modélisation ML, deep learning.",
                 "Data & IA", 2200.0, List.of(formateur2));
 
-        Formation f3 = createFormation("DevOps & Cloud Engineering — AWS & Docker",
+        Formation f3 = createFormation("DevOps & Cloud Engineering â€” AWS & Docker",
                 "Formation DevOps complète : CI/CD, containerisation Docker/Kubernetes, infrastructure as code.",
                 "DevOps & Cloud", 2500.0, List.of(formateur1, formateur2));
 
-        // ─── Formation 4: COMPLETED (for certification testing) ──────────────────
+        // â”€â”€â”€ Formation 4: COMPLETED (for certification testing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Formation f4 = createFormation("Cybersécurité & Ethical Hacking",
-                "Formation complète en cybersécurité : pentesting, OWASP Top 10, sécurisation des infrastructures et ethical hacking. Certification reconnue par l'industrie.",
+                "Formation complète en Cybersécurité : pentesting, OWASP Top 10, sécurisation des infrastructures et ethical hacking. Certification reconnue par l'industrie.",
                 "Cybersécurité", 3200.0, List.of(formateur1));
 
-        // ─── 3. Create Phases for Formation 1 ────────────────────────────────────
+        // â”€â”€â”€ 3. Create Phases for Formation 1 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Phase f1p1 = createPhase(f1, 1, "Fondamentaux Java & Spring Boot",
                 "Architecture REST, JPA/Hibernate, Spring Security, JWT.", 600.0);
         Phase f1p2 = createPhase(f1, 2, "Angular & Architecture Frontend",
                 "Composants, Services, RxJS, State Management.", 700.0);
-        Phase f1p3 = createPhase(f1, 3, "Projet Fil Rouge & Déploiement",
-                "Conception et réalisation d'une application complète.", 500.0);
+        Phase f1p3 = createPhase(f1, 3, "Projet Fil Rouge & DÃ©ploiement",
+                "Conception et rÃ©alisation d'une application complète.", 500.0);
 
-        // ─── 4. Create Phases for Formation 2 ────────────────────────────────────
+        // â”€â”€â”€ 4. Create Phases for Formation 2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Phase f2p1 = createPhase(f2, 1, "Python & Analyse de Données",
                 "NumPy, Pandas, Matplotlib.", 700.0);
         Phase f2p2 = createPhase(f2, 2, "Machine Learning Appliqué",
@@ -128,23 +128,23 @@ public class DataSeeder implements CommandLineRunner {
         Phase f2p3 = createPhase(f2, 3, "Deep Learning & Mise en Production",
                 "Réseaux de neurones avec Keras/TensorFlow.", 700.0);
 
-        // ─── 5. Create Phases for Formation 3 ────────────────────────────────────
+        // â”€â”€â”€ 5. Create Phases for Formation 3 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Phase f3p1 = createPhase(f3, 1, "Containerisation Docker & Kubernetes",
                 "Images Docker, Docker Compose, Kubernetes.", 800.0);
         Phase f3p2 = createPhase(f3, 2, "CI/CD & Infrastructure as Code",
                 "GitHub Actions, GitLab CI, Terraform.", 950.0);
-        Phase f3p3 = createPhase(f3, 3, "Cloud AWS — Architecture & Sécurité",
+        Phase f3p3 = createPhase(f3, 3, "Cloud AWS â€” Architecture & Sécurité",
                 "EC2, S3, RDS, Lambda, IAM, VPC.", 750.0);
 
-        // ─── 6. Create Phases for Formation 4 (COMPLETED) ────────────────────────
+        // â”€â”€â”€ 6. Create Phases for Formation 4 (COMPLETED) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Phase f4p1 = createPhase(f4, 1, "Fondamentaux de la Cybersécurité",
-                "Concepts de base, modèles de menaces, cryptographie, protocoles sécurisés.", 900.0);
+                "Concepts de base, modÃ¨les de menaces, cryptographie, protocoles sÃ©curisÃ©s.", 900.0);
         Phase f4p2 = createPhase(f4, 2, "Pentesting & Ethical Hacking",
                 "Kali Linux, Metasploit, Nmap, BurpSuite, OWASP Top 10 attacks.", 1100.0);
-        Phase f4p3 = createPhase(f4, 3, "Sécurisation des Infrastructures",
-                "Firewall, IDS/IPS, SIEM, Zero Trust Architecture, audit de sécurité.", 1200.0);
+        Phase f4p3 = createPhase(f4, 3, "sécurisation des Infrastructures",
+                "Firewall, IDS/IPS, SIEM, Zero Trust Architecture, audit de Sécurité.", 1200.0);
 
-        // ─── 7. Create Sessions ───────────────────────────────────────────────────
+        // â”€â”€â”€ 7. Create Sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Formation 1 sessions
         createSession(f1p1, LocalDate.now().minusDays(30), "09:00", 3, "Salle Alpha", null);
         createSession(f1p1, LocalDate.now().minusDays(23), "09:00", 3, "Salle Alpha", null);
@@ -166,7 +166,7 @@ public class DataSeeder implements CommandLineRunner {
         createSession(f3p1, LocalDate.now().plusDays(3), "09:00", 4, "Lab DevOps", null);
         createSession(f3p1, LocalDate.now().plusDays(10), "09:00", 4, "Lab DevOps", "https://meet.google.com/bridge-f3-p1");
 
-        // Formation 4 — ALL SESSIONS IN THE PAST (COMPLETED)
+        // Formation 4 â€” ALL SESSIONS IN THE PAST (COMPLETED)
         Session f4p1s1 = createSession(f4p1, LocalDate.now().minusDays(90), "09:00", 4, "Lab Cyber", null);
         Session f4p1s2 = createSession(f4p1, LocalDate.now().minusDays(83), "09:00", 4, "Lab Cyber", null);
         Session f4p1s3 = createSession(f4p1, LocalDate.now().minusDays(76), "14:00", 4, "Lab Cyber", null);
@@ -177,7 +177,7 @@ public class DataSeeder implements CommandLineRunner {
         Session f4p3s2 = createSession(f4p3, LocalDate.now().minusDays(33), "09:00", 4, "Lab Infra", null);
         Session f4p3s3 = createSession(f4p3, LocalDate.now().minusDays(26), "14:00", 4, "Lab Infra", null);
 
-        // ─── 8. Enroll Students ───────────────────────────────────────────────────
+        // â”€â”€â”€ 8. Enroll Students â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         enrollStudent(stagiaires[0], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
         enrollStudent(stagiaires[1], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
         enrollStudent(stagiaires[2], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
@@ -191,19 +191,19 @@ public class DataSeeder implements CommandLineRunner {
         enrollStudent(stagiaires[1], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING, PaymentStatus.PENDING, PaymentStatus.PENDING);
         enrollStudent(stagiaires[4], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING, PaymentStatus.PENDING, PaymentStatus.PENDING);
 
-        // Formation 4 — FULLY COMPLETED enrollments
+        // Formation 4 â€” FULLY COMPLETED enrollments
         enrollStudent(stagiaires[0], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED, PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
         enrollStudent(stagiaires[2], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED, PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
         enrollStudent(stagiaires[4], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED, PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
 
-        // ─── 9. Attendance for F4 (all present = 100% assiduité) ─────────────────
+        // â”€â”€â”€ 9. Attendance for F4 (all present = 100% assiduité) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
             for (Session sess : List.of(f4p1s1, f4p1s2, f4p1s3, f4p2s1, f4p2s2, f4p2s3, f4p3s1, f4p3s2, f4p3s3)) {
                 createAttendance(s, sess, true, 5, "Excellente participation");
             }
         }
 
-        // ─── 10. Evaluations ──────────────────────────────────────────────────────
+        // â”€â”€â”€ 10. Evaluations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // F1 Phase 1
         createEvaluation(formateur1, stagiaires[0], f1p1, 17.5, "Excellent travail. Maîtrise parfaite des fondamentaux Spring Boot.", "Spring Boot, JPA, Spring Security, JWT, REST API");
         createEvaluation(formateur1, stagiaires[1], f1p1, 15.0, "Très bon niveau. Quelques erreurs de gestion d'exceptions.", "Spring Boot, JPA, REST API, Maven");
@@ -211,40 +211,40 @@ public class DataSeeder implements CommandLineRunner {
         createEvaluation(formateur1, stagiaires[3], f1p1, 12.5, "Niveau satisfaisant. Doit approfondir JPA.", "Spring Boot, JPA");
         createEvaluation(formateur1, stagiaires[4], f1p1, 18.0, "Performance remarquable. Code propre, architecture exemplaire.", "Spring Boot, JPA, Spring Security, JWT, Docker");
         // F2 Phase 1
-        createEvaluation(formateur2, stagiaires[5], f2p1, 16.0, "Excellente maîtrise de Pandas et NumPy.", "Python, Pandas, NumPy, Matplotlib, Seaborn");
-        createEvaluation(formateur2, stagiaires[6], f2p1, 13.0, "Bon niveau général.", "Python, Pandas, NumPy");
+        createEvaluation(formateur2, stagiaires[5], f2p1, 16.0, "Excellente Maîtrise de Pandas et NumPy.", "Python, Pandas, NumPy, Matplotlib, Seaborn");
+        createEvaluation(formateur2, stagiaires[6], f2p1, 13.0, "Bon niveau gÃ©nÃ©ral.", "Python, Pandas, NumPy");
         createEvaluation(formateur2, stagiaires[7], f2p1, 15.5, "Très bon travail.", "Python, Pandas, NumPy, Matplotlib");
-        // F4 — ALL 3 PHASES evaluated with grade ≥ 14 (COMPLETED)
-        createEvaluation(formateur1, stagiaires[0], f4p1, 18.5, "Maîtrise exceptionnelle des fondamentaux de la cybersécurité. Analyse de menaces remarquable.", "Cryptographie, Protocoles TLS/SSL, Modèles de menaces, Sécurité réseau");
+        // F4 â€” ALL 3 PHASES evaluated with grade â‰¥ 14 (COMPLETED)
+        createEvaluation(formateur1, stagiaires[0], f4p1, 18.5, "Maîtrise exceptionnelle des fondamentaux de la Cybersécurité. Analyse de menaces remarquable.", "Cryptographie, Protocoles TLS/SSL, ModÃ¨les de menaces, Sécurité réseau");
         createEvaluation(formateur1, stagiaires[0], f4p2, 17.0, "Excellent travail en pentesting. Exploitation OWASP Top 10 maîtrisée.", "Kali Linux, Metasploit, BurpSuite, OWASP, Nmap");
         createEvaluation(formateur1, stagiaires[0], f4p3, 16.5, "Très bonne sécurisation des infrastructures. Architecture Zero Trust bien comprise.", "Firewall, SIEM, IDS/IPS, Zero Trust, Audit");
-        createEvaluation(formateur1, stagiaires[2], f4p1, 15.5, "Bonne compréhension des concepts de cybersécurité.", "Cryptographie, Protocoles TLS/SSL, Sécurité réseau");
+        createEvaluation(formateur1, stagiaires[2], f4p1, 15.5, "Bonne compréhension des concepts de Cybersécurité.", "Cryptographie, Protocoles TLS/SSL, Sécurité réseau");
         createEvaluation(formateur1, stagiaires[2], f4p2, 14.5, "Bon niveau en pentesting.", "Kali Linux, Metasploit, BurpSuite");
         createEvaluation(formateur1, stagiaires[2], f4p3, 14.0, "Infrastructure bien sécurisée.", "Firewall, SIEM, IDS/IPS");
-        createEvaluation(formateur1, stagiaires[4], f4p1, 16.0, "Très bonne maîtrise.", "Cryptographie, Protocoles TLS/SSL");
+        createEvaluation(formateur1, stagiaires[4], f4p1, 16.0, "Très bonne Maîtrise.", "Cryptographie, Protocoles TLS/SSL");
         createEvaluation(formateur1, stagiaires[4], f4p2, 15.0, "Bon travail en ethical hacking.", "Kali Linux, Metasploit");
         createEvaluation(formateur1, stagiaires[4], f4p3, 14.5, "Bonne sécurisation.", "Firewall, SIEM");
 
-        // ─── 11. Progression for F4 (all validated = certificates ready) ──────────
+        // â”€â”€â”€ 11. Progression for F4 (all validated = certificates ready) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
             for (Phase p : List.of(f4p1, f4p2, f4p3)) {
                 createProgression(s, p, true, true, true, LocalDate.now().minusDays(20));
             }
         }
 
-        // ─── 12. Notifications ────────────────────────────────────────────────────
-        createNotification(formateur1, "🎓 Nouvelle Inscription", "Mohamed Trabelsi vient de rejoindre votre formation Full Stack.");
-        createNotification(formateur1, "📋 Séance Aujourd'hui", "Rappel : vous avez une séance Angular ce matin à 10h00 en Salle Beta.");
-        createNotification(formateur2, "⭐ Évaluation requise", "Les stagiaires de la phase Python attendent leur évaluation.");
-        createNotification(stagiaires[0], "✅ Inscription confirmée", "Votre inscription à la formation Full Stack est confirmée. Bienvenue !");
-        createNotification(stagiaires[0], "🏆 Certification obtenue !", "Félicitations ! Vous avez obtenu votre certificat Blockchain pour la phase 'Fondamentaux de la Cybersécurité'. Note : 18.5/20");
-        createNotification(stagiaires[1], "📚 Nouvelle phase débloquée", "La phase Angular & Architecture Frontend est maintenant accessible.");
-        createNotification(stagiaires[4], "🏅 Évaluation publiée", "Dr. Amine Hadj a publié votre évaluation. Note : 18/20 — Excellent !");
+        // â”€â”€â”€ 12. Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        createNotification(formateur1, "ðŸŽ“ Nouvelle Inscription", "Mohamed Trabelsi vient de rejoindre votre formation Full Stack.");
+        createNotification(formateur1, "ðŸ“‹ Séance Aujourd'hui", "Rappel : vous avez une Séance Angular ce matin Ã  10h00 en Salle Beta.");
+        createNotification(formateur2, "â­ Évaluation requise", "Les stagiaires de la phase Python attendent leur Ã©valuation.");
+        createNotification(stagiaires[0], "âœ… Inscription confirmée", "Votre inscription Ã  la formation Full Stack est confirmée. Bienvenue !");
+        createNotification(stagiaires[0], "ðŸ† Certification obtenue !", "Félicitations ! Vous avez obtenu votre certificat Blockchain pour la phase 'Fondamentaux de la Cybersécurité'. Note : 18.5/20");
+        createNotification(stagiaires[1], "ðŸ“š Nouvelle phase débloquée", "La phase Angular & Architecture Frontend est maintenant accessible.");
+        createNotification(stagiaires[4], "ðŸ… Évaluation publiée", "Dr. Amine Hadj a publié votre Ã©valuation. Note : 18/20 â€” Excellent !");
 
-        System.out.println("=== Bridge DataSeeder: Données initialisées avec succès ===");
+        System.out.println("=== Bridge DataSeeder: Données initialisÃ©es avec succÃ¨s ===");
     }
 
-    // ─── Helper Methods ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ Helper Methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private User createUser(String firstName, String lastName, String email,
                              String password, Role role, Status status, int age, String avatar) {
