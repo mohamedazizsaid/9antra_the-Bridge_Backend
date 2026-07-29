@@ -8,6 +8,7 @@ import com._antra.the_bridge.enumType.Role;
 import com._antra.the_bridge.exception.CustomException;
 import com._antra.the_bridge.repository.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,17 +22,20 @@ public class UserServiceImpl implements UserService {
     private final EnrollmentRepository enrollmentRepository;
     private final CertificateRepository certificateRepository;
     private final NotificationRepository notificationRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository,
                            FormationRepository formationRepository,
                            EnrollmentRepository enrollmentRepository,
                            CertificateRepository certificateRepository,
-                           NotificationRepository notificationRepository) {
+                           NotificationRepository notificationRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.formationRepository = formationRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.certificateRepository = certificateRepository;
         this.notificationRepository = notificationRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -58,7 +62,7 @@ public class UserServiceImpl implements UserService {
         if (profileDTO.getPhone() != null) {
             user.setPhone(profileDTO.getPhone());
         }
-        if (profileDTO.getAge() > 0) {
+        if (profileDTO.getAge() != null && profileDTO.getAge() > 0) {
             user.setAge(profileDTO.getAge());
         }
         if (profileDTO.getAvatar() != null) {
@@ -67,6 +71,23 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
         return DTOHelper.toDTO(user);
+    }
+
+    @Override
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("Utilisateur non trouvé", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new CustomException("Mot de passe actuel incorrect", HttpStatus.BAD_REQUEST);
+        }
+
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new CustomException("Le nouveau mot de passe doit contenir au moins 8 caractères", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
     @Override

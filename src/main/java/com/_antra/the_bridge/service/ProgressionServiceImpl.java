@@ -122,31 +122,46 @@ public class ProgressionServiceImpl implements ProgressionService {
         if (progression.isPaymentValidated() && progression.isPedagogicalValidated()) {
             if (!alreadyValidated) {
                 progression.setValidationDate(LocalDate.now());
-                
-                // Issue blockchain certificate
-                com._antra.the_bridge.dto.CertificateDTO cert = certificateService.generateCertificate(studentId, phaseId);
 
-                // Send certificate email to student
-                if (student.getEmail() != null && cert != null) {
-                    String formationTitle = phase.getFormation() != null ? phase.getFormation().getTitle() : "N/A";
-                    mailService.sendCertificateEmail(
-                        student.getEmail(),
-                        student.getFirstName(),
-                        student.getLastName(),
-                        phase.getTitle(),
-                        formationTitle,
-                        cert.getCertificateNumber(),
-                        cert.getBlockchainTransactionHash(),
-                        cert.getIssueDate() != null ? cert.getIssueDate().toString() : LocalDate.now().toString()
-                    );
+                // Issue blockchain certificate (non-blocking)
+                try {
+                    com._antra.the_bridge.dto.CertificateDTO cert = certificateService.generateCertificate(studentId, phaseId);
+                    if (student.getEmail() != null && cert != null) {
+                        String formationTitle = phase.getFormation() != null ? phase.getFormation().getTitle() : "N/A";
+                        try {
+                            mailService.sendCertificateEmail(
+                                student.getEmail(),
+                                student.getFirstName(),
+                                student.getLastName(),
+                                phase.getTitle(),
+                                formationTitle,
+                                cert.getCertificateNumber(),
+                                cert.getBlockchainTransactionHash(),
+                                cert.getIssueDate() != null ? cert.getIssueDate().toString() : LocalDate.now().toString()
+                            );
+                        } catch (Exception mailEx) {
+                            System.err.println("Failed to send certificate email: " + mailEx.getMessage());
+                        }
+                    }
+                } catch (Exception certEx) {
+                    System.err.println("Certificate generation failed (non-blocking): " + certEx.getMessage());
                 }
 
                 // Create and send notification
-                createAndSendNotification(student, "Certificat disponible ðŸŽ“", 
-                        "FÃ©licitations ! Votre certificat pour la phase \"" + phase.getTitle() + "\" a Ã©tÃ© gÃ©nÃ©rÃ© sur la blockchain Polygon.");
+                try {
+                    createAndSendNotification(student,
+                        "Certificat disponible \uD83C\uDF93",
+                        "F\u00e9licitations ! Votre certificat pour la phase \"" + phase.getTitle() + "\" a \u00e9t\u00e9 g\u00e9n\u00e9r\u00e9 sur la blockchain Polygon.");
+                } catch (Exception notifEx) {
+                    System.err.println("Failed to send certificate notification: " + notifEx.getMessage());
+                }
 
                 // Unlock next phase if exists
-                unlockNextPhase(student, phase);
+                try {
+                    unlockNextPhase(student, phase);
+                } catch (Exception unlockEx) {
+                    System.err.println("Failed to unlock next phase: " + unlockEx.getMessage());
+                }
             }
         } else {
             progression.setValidationDate(null);
@@ -157,7 +172,7 @@ public class ProgressionServiceImpl implements ProgressionService {
 
     private void unlockNextPhase(User student, Phase currentPhase) {
         if (currentPhase.getFormation() == null) return;
-        
+
         List<Phase> phases = phaseRepository.findByFormationIdOrderByPhaseOrder(currentPhase.getFormation().getId());
         Phase nextPhase = null;
         for (Phase p : phases) {
@@ -170,7 +185,7 @@ public class ProgressionServiceImpl implements ProgressionService {
         if (nextPhase != null) {
             Progression nextProgression = progressionRepository.findByStudentIdAndPhaseId(student.getId(), nextPhase.getId())
                     .orElse(new Progression());
-            
+
             if (nextProgression.getId() == null) {
                 nextProgression.setStudent(student);
                 nextProgression.setPhase(nextPhase);
@@ -178,8 +193,13 @@ public class ProgressionServiceImpl implements ProgressionService {
             nextProgression.setUnlocked(true);
             progressionRepository.save(nextProgression);
 
-            createAndSendNotification(student, "Nouvelle phase dÃ©bloquÃ©e ðŸš€", 
-                    "La phase \"" + nextPhase.getTitle() + "\" est dÃ©sormais accessible !");
+            try {
+                createAndSendNotification(student,
+                    "Nouvelle phase d\u00e9bloqu\u00e9e \uD83D\uDE80",
+                    "La phase \"" + nextPhase.getTitle() + "\" est d\u00e9sormais accessible !");
+            } catch (Exception e) {
+                System.err.println("Failed to send unlock notification: " + e.getMessage());
+            }
         }
     }
 

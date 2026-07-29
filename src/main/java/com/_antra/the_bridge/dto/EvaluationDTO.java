@@ -2,11 +2,15 @@ package com._antra.the_bridge.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class EvaluationDTO {
     private Long id;
     private Double grade;

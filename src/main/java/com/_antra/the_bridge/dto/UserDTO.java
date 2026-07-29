@@ -26,7 +26,7 @@ public class UserDTO {
     private LocalDate createdAt;
     private LocalDate lastActivity;
     private String authProvider;
-    private boolean mustChangePassword;
+    private Boolean mustChangePassword;
     private String password; // Only used for formateur creation, never returned
     private String specialty;
 }

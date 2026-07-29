@@ -9,5 +9,6 @@ public interface UserService {
     List<UserDTO> getAllUsers();
     UserDTO getProfile(String email);
     UserDTO updateProfile(String email, UserDTO profileDTO);
+    void changePassword(String email, String currentPassword, String newPassword);
     DashboardStatsDTO getAdminStats(String email);
 }

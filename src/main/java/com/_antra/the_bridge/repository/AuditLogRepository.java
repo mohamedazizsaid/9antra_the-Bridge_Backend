@@ -27,4 +27,15 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
         @Param("to") LocalDateTime to,
         Pageable pageable
     );
+
+    @Query("""
+        SELECT a FROM AuditLog a
+        WHERE a.createdAt < :cutoffDate
+        ORDER BY a.createdAt ASC
+        LIMIT :limit
+    """)
+    List<AuditLog> findOldLogs(
+        @Param("cutoffDate") LocalDateTime cutoffDate,
+        @Param("limit") int limit
+    );
 }

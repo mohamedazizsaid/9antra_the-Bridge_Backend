@@ -94,20 +94,20 @@ public class DataSeeder implements CommandLineRunner {
                     "https://api.dicebear.com/7.x/initials/svg?seed=HS&backgroundColor=f472b6"),
         };
 
-        // â”€â”€â”€ 2. Create Formations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        Formation f1 = createFormation("Développement Full Stack â€” Spring Boot & Angular",
-                "Maîtrisez l'architecture microservices et le Développement full stack moderne avec Spring Boot et Angular.",
+        // ——— 2. Create Formations —————————————————————————————————————————————————
+        Formation f1 = createFormation("Développement Full Stack — Spring Boot & Angular",
+                "Maîtrisez l'architecture microservices et le développement full stack moderne avec Spring Boot et Angular.",
                 "Développement Web", 1800.0, List.of(formateur1));
 
         Formation f2 = createFormation("Data Science & Machine Learning avec Python",
                 "Plongez dans le monde de la data science : analyse exploratoire, modélisation ML, deep learning.",
                 "Data & IA", 2200.0, List.of(formateur2));
 
-        Formation f3 = createFormation("DevOps & Cloud Engineering â€” AWS & Docker",
+        Formation f3 = createFormation("DevOps & Cloud Engineering — AWS & Docker",
                 "Formation DevOps complète : CI/CD, containerisation Docker/Kubernetes, infrastructure as code.",
                 "DevOps & Cloud", 2500.0, List.of(formateur1, formateur2));
 
-        // â”€â”€â”€ Formation 4: COMPLETED (for certification testing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— Formation 4: COMPLETED (for certification testing) ——————————————————
         Formation f4 = createFormation("Cybersécurité & Ethical Hacking",
                 "Formation complète en Cybersécurité : pentesting, OWASP Top 10, sécurisation des infrastructures et ethical hacking. Certification reconnue par l'industrie.",
                 "Cybersécurité", 3200.0, List.of(formateur1));
@@ -117,8 +117,8 @@ public class DataSeeder implements CommandLineRunner {
                 "Architecture REST, JPA/Hibernate, Spring Security, JWT.", 600.0);
         Phase f1p2 = createPhase(f1, 2, "Angular & Architecture Frontend",
                 "Composants, Services, RxJS, State Management.", 700.0);
-        Phase f1p3 = createPhase(f1, 3, "Projet Fil Rouge & DÃ©ploiement",
-                "Conception et rÃ©alisation d'une application complète.", 500.0);
+        Phase f1p3 = createPhase(f1, 3, "Projet Fil Rouge & Déploiement",
+                "Conception et réalisation d'une application complète.", 500.0);
 
         // â”€â”€â”€ 4. Create Phases for Formation 2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Phase f2p1 = createPhase(f2, 1, "Python & Analyse de Données",
@@ -128,20 +128,20 @@ public class DataSeeder implements CommandLineRunner {
         Phase f2p3 = createPhase(f2, 3, "Deep Learning & Mise en Production",
                 "Réseaux de neurones avec Keras/TensorFlow.", 700.0);
 
-        // â”€â”€â”€ 5. Create Phases for Formation 3 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— 5. Create Phases for Formation 3 —————————————————————————————————————
         Phase f3p1 = createPhase(f3, 1, "Containerisation Docker & Kubernetes",
                 "Images Docker, Docker Compose, Kubernetes.", 800.0);
         Phase f3p2 = createPhase(f3, 2, "CI/CD & Infrastructure as Code",
                 "GitHub Actions, GitLab CI, Terraform.", 950.0);
-        Phase f3p3 = createPhase(f3, 3, "Cloud AWS â€” Architecture & Sécurité",
+        Phase f3p3 = createPhase(f3, 3, "Cloud AWS — Architecture & Sécurité",
                 "EC2, S3, RDS, Lambda, IAM, VPC.", 750.0);
 
-        // â”€â”€â”€ 6. Create Phases for Formation 4 (COMPLETED) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— 6. Create Phases for Formation 4 (COMPLETED) —————————————————————————
         Phase f4p1 = createPhase(f4, 1, "Fondamentaux de la Cybersécurité",
-                "Concepts de base, modÃ¨les de menaces, cryptographie, protocoles sÃ©curisÃ©s.", 900.0);
+                "Concepts de base, modèles de menaces, cryptographie, protocoles sécurisés.", 900.0);
         Phase f4p2 = createPhase(f4, 2, "Pentesting & Ethical Hacking",
                 "Kali Linux, Metasploit, Nmap, BurpSuite, OWASP Top 10 attacks.", 1100.0);
-        Phase f4p3 = createPhase(f4, 3, "sécurisation des Infrastructures",
+        Phase f4p3 = createPhase(f4, 3, "Sécurisation des Infrastructures",
                 "Firewall, IDS/IPS, SIEM, Zero Trust Architecture, audit de Sécurité.", 1200.0);
 
         // â”€â”€â”€ 7. Create Sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
