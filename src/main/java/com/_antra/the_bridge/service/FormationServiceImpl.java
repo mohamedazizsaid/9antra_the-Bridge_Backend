@@ -243,20 +243,7 @@ public class FormationServiceImpl implements FormationService {
         Formation formation = phase.getFormation();
         if (formation == null) return;
 
-        // Determine if this is the last session of the last phase
-        List<Phase> phases = phaseRepository.findByFormationIdOrderByPhaseOrder(formation.getId());
-        Phase lastPhase = phases.isEmpty() ? null : phases.get(phases.size() - 1);
-        if (lastPhase == null || !lastPhase.getId().equals(phase.getId())) return;
-
-        List<Session> phaseSessions = sessionRepository.findByPhaseId(phase.getId());
-        // Check if this session is the last one by date order
-        Session latestSession = phaseSessions.stream()
-                .max(java.util.Comparator.comparing(Session::getSessionDate)
-                        .thenComparing(Session::getStartTime))
-                .orElse(null);
-        if (latestSession == null || !latestSession.getId().equals(sessionId)) return;
-
-        // Trigger certificate check for all enrolled students
+        // Trigger progress update & certificate check for all enrolled students
         List<Enrollment> enrollments = enrollmentRepository.findByFormationId(formation.getId());
         for (Enrollment enrollment : enrollments) {
             int studentId = enrollment.getStudent().getId();
@@ -264,3 +251,4 @@ public class FormationServiceImpl implements FormationService {
         }
     }
 }
+

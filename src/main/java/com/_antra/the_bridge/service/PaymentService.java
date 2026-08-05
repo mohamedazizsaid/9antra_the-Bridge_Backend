@@ -13,4 +13,6 @@ public interface PaymentService {
 
     StripeCheckoutResponse createStripeCheckoutSession(PaymentDTO paymentDTO);
     PaymentDTO verifyStripePayment(String sessionId, Long enrollmentId, Long phaseId);
+    void handleStripeWebhook(String payload, String sigHeader);
 }
+

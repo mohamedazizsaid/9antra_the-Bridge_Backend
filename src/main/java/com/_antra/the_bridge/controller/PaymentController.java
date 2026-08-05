@@ -60,4 +60,14 @@ public class PaymentController {
             @RequestParam Long phaseId) {
         return ResponseEntity.ok(paymentService.verifyStripePayment(sessionId, enrollmentId, phaseId));
     }
+
+    @PostMapping("/stripe/webhook")
+    @Operation(summary = "Webhook Stripe pour notifier les paiements complétés")
+    public ResponseEntity<Void> handleStripeWebhook(
+            @RequestBody String payload,
+            @RequestHeader("Stripe-Signature") String sigHeader) {
+        paymentService.handleStripeWebhook(payload, sigHeader);
+        return ResponseEntity.ok().build();
+    }
 }
+

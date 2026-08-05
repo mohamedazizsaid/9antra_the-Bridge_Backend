@@ -27,4 +27,13 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     @Query("SELECT s FROM Session s JOIN s.phase p JOIN p.formation f JOIN f.trainers t " +
            "WHERE t.id = :trainerId AND s.sessionDate >= :today ORDER BY s.sessionDate ASC, s.startTime ASC")
     List<Session> findUpcomingByTrainerId(@Param("trainerId") int trainerId, @Param("today") LocalDate today);
+
+    @Query("SELECT s FROM Session s JOIN s.phase p JOIN p.formation f JOIN f.trainers t " +
+           "WHERE t.id = :trainerId AND s.sessionDate < :today ORDER BY s.sessionDate DESC, s.startTime DESC")
+    List<Session> findPastByTrainerId(@Param("trainerId") int trainerId, @Param("today") LocalDate today);
+
+    @Query("SELECT s FROM Session s JOIN s.phase p JOIN p.formation f JOIN f.trainers t " +
+           "WHERE t.id = :trainerId ORDER BY s.sessionDate DESC, s.startTime DESC")
+    List<Session> findAllByTrainerId(@Param("trainerId") int trainerId);
 }
+

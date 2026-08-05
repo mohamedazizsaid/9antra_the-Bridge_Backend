@@ -43,12 +43,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/payments/stripe/webhook",
                                 "/ws/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

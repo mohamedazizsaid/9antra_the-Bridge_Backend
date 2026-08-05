@@ -50,6 +50,19 @@ public class SessionController {
         return ResponseEntity.ok(sessionService.getUpcomingSessionsByTrainer(trainerId));
     }
 
+    @GetMapping("/trainer/{trainerId}/past")
+    @Operation(summary = "Séances passées pour un formateur")
+    public ResponseEntity<List<SessionDTO>> getPastSessionsByTrainer(@PathVariable int trainerId) {
+        return ResponseEntity.ok(sessionService.getPastSessionsByTrainer(trainerId));
+    }
+
+    @GetMapping("/trainer/{trainerId}")
+    @Operation(summary = "Toutes les séances pour un formateur")
+    public ResponseEntity<List<SessionDTO>> getAllSessionsByTrainer(@PathVariable int trainerId) {
+        return ResponseEntity.ok(sessionService.getAllSessionsByTrainer(trainerId));
+    }
+
+
     @PostMapping
     @Operation(summary = "Créer une nouvelle séance")
     public ResponseEntity<SessionDTO> createSession(@RequestBody SessionDTO sessionDTO) {

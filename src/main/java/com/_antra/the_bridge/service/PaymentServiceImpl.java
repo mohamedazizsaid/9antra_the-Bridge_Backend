@@ -148,6 +148,9 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
+    @Value("${stripe.webhook-secret:}")
+    private String stripeWebhookSecret;
+
     @Override
     public PaymentDTO verifyStripePayment(String sessionId, Long enrollmentId, Long phaseId) {
         Stripe.apiKey = this.stripeApiKey;
@@ -156,28 +159,7 @@ public class PaymentServiceImpl implements PaymentService {
             Session session = Session.retrieve(sessionId);
 
             if ("paid".equalsIgnoreCase(session.getPaymentStatus())) {
-                Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                        .orElseThrow(() -> new CustomException("Enrollment not found", HttpStatus.NOT_FOUND));
-                Phase phase = phaseRepository.findById(phaseId)
-                        .orElseThrow(() -> new CustomException("Phase not found", HttpStatus.NOT_FOUND));
-
-                Payment payment = new Payment();
-                double amountPaid = session.getAmountTotal() != null ? session.getAmountTotal() / 100.0 : phase.getPrice();
-                payment.setAmount(amountPaid);
-                payment.setPaymentDate(LocalDate.now());
-                payment.setPaymentMethod("Stripe");
-                payment.setStatus(PaymentStatus.COMPLETED);
-                payment.setTransactionReference(sessionId);
-                payment.setEnrollment(enrollment);
-                payment.setPhase(phase);
-
-                Payment savedPayment = paymentRepository.save(payment);
-
-                if (enrollment.getStudent() != null) {
-                    progressionService.checkAndUpdateProgress(enrollment.getStudent().getId(), phase.getId());
-                }
-
-                return DTOHelper.toDTO(savedPayment);
+                return processSuccessfulPayment(session, enrollmentId, phaseId);
             } else {
                 throw new CustomException("Le paiement Stripe n'a pas été validé (Statut: " + session.getPaymentStatus() + ")", HttpStatus.BAD_REQUEST);
             }
@@ -187,4 +169,74 @@ public class PaymentServiceImpl implements PaymentService {
             throw new CustomException("Erreur lors de la vérification du paiement Stripe: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Override
+    public void handleStripeWebhook(String payload, String sigHeader) {
+        com.stripe.model.Event event;
+        try {
+            if (sigHeader != null && stripeWebhookSecret != null && !stripeWebhookSecret.isBlank()) {
+                event = com.stripe.net.Webhook.constructEvent(payload, sigHeader, stripeWebhookSecret);
+            } else {
+                event = com.stripe.net.Webhook.constructEvent(payload, sigHeader, "");
+            }
+        } catch (Exception e) {
+            throw new CustomException("Signature ou Webhook invalide: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+
+
+        if ("checkout.session.completed".equals(event.getType())) {
+            com.stripe.model.EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
+            if (dataObjectDeserializer.getObject().isPresent()) {
+                Session session = (Session) dataObjectDeserializer.getObject().get();
+                if (session.getMetadata() != null) {
+                    String enrollmentIdStr = session.getMetadata().get("enrollmentId");
+                    String phaseIdStr = session.getMetadata().get("phaseId");
+                    if (enrollmentIdStr != null && phaseIdStr != null) {
+                        Long enrollmentId = Long.parseLong(enrollmentIdStr);
+                        Long phaseId = Long.parseLong(phaseIdStr);
+                        processSuccessfulPayment(session, enrollmentId, phaseId);
+                    }
+                }
+            }
+        }
+    }
+
+    private PaymentDTO processSuccessfulPayment(Session session, Long enrollmentId, Long phaseId) {
+        // Éviter les doublons si le paiement a déjà été enregistré via vérification synchrone ou webhook
+        boolean exists = paymentRepository.findAll().stream()
+                .anyMatch(p -> session.getId().equals(p.getTransactionReference()));
+
+
+        if (exists) {
+            Payment existing = paymentRepository.findAll().stream()
+                    .filter(p -> session.getId().equals(p.getTransactionReference()))
+                    .findFirst().orElse(null);
+            return DTOHelper.toDTO(existing);
+        }
+
+        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new CustomException("Enrollment not found", HttpStatus.NOT_FOUND));
+        Phase phase = phaseRepository.findById(phaseId)
+                .orElseThrow(() -> new CustomException("Phase not found", HttpStatus.NOT_FOUND));
+
+        Payment payment = new Payment();
+        double amountPaid = session.getAmountTotal() != null ? session.getAmountTotal() / 100.0 : phase.getPrice();
+        payment.setAmount(amountPaid);
+        payment.setPaymentDate(LocalDate.now());
+        payment.setPaymentMethod("Stripe");
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setTransactionReference(session.getId());
+        payment.setEnrollment(enrollment);
+        payment.setPhase(phase);
+
+        Payment savedPayment = paymentRepository.save(payment);
+
+        if (enrollment.getStudent() != null) {
+            progressionService.checkAndUpdateProgress(enrollment.getStudent().getId(), phase.getId());
+        }
+
+        return DTOHelper.toDTO(savedPayment);
+    }
 }
+
