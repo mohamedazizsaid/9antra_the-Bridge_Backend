@@ -1,7 +1,6 @@
 package com._antra.the_bridge.config;
 
 import com._antra.the_bridge.entity.AuditLog;
-import com._antra.the_bridge.entity.User;
 import com._antra.the_bridge.repository.AuditLogRepository;
 import com._antra.the_bridge.repository.UserRepository;
 import jakarta.servlet.FilterChain;

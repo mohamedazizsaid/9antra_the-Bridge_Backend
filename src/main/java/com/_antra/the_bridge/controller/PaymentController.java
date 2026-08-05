@@ -1,6 +1,7 @@
 package com._antra.the_bridge.controller;
 
 import com._antra.the_bridge.dto.PaymentDTO;
+import com._antra.the_bridge.dto.StripeCheckoutResponse;
 import com._antra.the_bridge.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,5 +44,20 @@ public class PaymentController {
     @Operation(summary = "Nombre d'échéances de paiement en retard pour un stagiaire")
     public ResponseEntity<Map<String, Integer>> getRetardCount(@PathVariable int studentId) {
         return ResponseEntity.ok(Map.of("count", paymentService.getRetardCount(studentId)));
+    }
+
+    @PostMapping("/stripe/create-checkout-session")
+    @Operation(summary = "Créer une session de paiement Stripe Checkout")
+    public ResponseEntity<StripeCheckoutResponse> createStripeCheckoutSession(@RequestBody PaymentDTO paymentDTO) {
+        return ResponseEntity.ok(paymentService.createStripeCheckoutSession(paymentDTO));
+    }
+
+    @GetMapping("/stripe/verify")
+    @Operation(summary = "Vérifier et valider un paiement Stripe Checkout")
+    public ResponseEntity<PaymentDTO> verifyStripePayment(
+            @RequestParam String sessionId,
+            @RequestParam Long enrollmentId,
+            @RequestParam Long phaseId) {
+        return ResponseEntity.ok(paymentService.verifyStripePayment(sessionId, enrollmentId, phaseId));
     }
 }
