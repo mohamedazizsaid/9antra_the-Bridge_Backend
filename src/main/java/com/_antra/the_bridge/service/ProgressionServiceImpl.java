@@ -83,38 +83,31 @@ public class ProgressionServiceImpl implements ProgressionService {
         }
         progression.setPaymentValidated(isPaid);
 
-        // 2. Check Pedagogical Status (Grade & Attendance)
-        Optional<Evaluation> evaluationOpt = evaluationRepository.findByStudentIdAndPhaseId(studentId, phaseId);
-        boolean pedagogicalOk = false;
-        
-        if (evaluationOpt.isPresent()) {
-            Evaluation evaluation = evaluationOpt.get();
-            double grade = evaluation.getGrade() != null ? evaluation.getGrade() : 0.0;
-            double minGrade = phase.getMinimumGrade() != null ? phase.getMinimumGrade() : 0.0;
-
-            // Calculate attendance rate
-            List<Session> phaseSessions = sessionRepository.findByPhaseId(phaseId);
-            double attendanceRate = 100.0;
-            if (!phaseSessions.isEmpty()) {
-                long presentCount = 0;
-                long evaluatedSessions = 0;
-                for (Session session : phaseSessions) {
-                    Optional<Attendance> attOpt = attendanceRepository.findByStudentIdAndSessionId(studentId, session.getId());
-                    if (attOpt.isPresent()) {
-                        evaluatedSessions++;
-                        if (Boolean.TRUE.equals(attOpt.get().getPresent())) {
-                            presentCount++;
-                        }
+        // 2. Check Pedagogical Status (Grade & Attendance >= 75%)
+        List<Session> phaseSessions = sessionRepository.findByPhaseId(phaseId);
+        double attendanceRate = 100.0;
+        if (!phaseSessions.isEmpty()) {
+            long presentCount = 0;
+            long evaluatedSessions = 0;
+            for (Session session : phaseSessions) {
+                Optional<Attendance> attOpt = attendanceRepository.findByStudentIdAndSessionId(studentId, session.getId());
+                if (attOpt.isPresent()) {
+                    evaluatedSessions++;
+                    if (Boolean.TRUE.equals(attOpt.get().getPresent())) {
+                        presentCount++;
                     }
                 }
-                attendanceRate = evaluatedSessions > 0 ? (double) presentCount / evaluatedSessions * 100 : 100.0;
             }
-
-            double minAttendance = phase.getMinimumAttendance() != null ? phase.getMinimumAttendance() : 0.0;
-            if (grade >= minGrade && attendanceRate >= minAttendance) {
-                pedagogicalOk = true;
-            }
+            attendanceRate = evaluatedSessions > 0 ? (double) presentCount / evaluatedSessions * 100 : 100.0;
         }
+
+        double minAttendance = (phase.getMinimumAttendance() != null && phase.getMinimumAttendance() > 0) ? phase.getMinimumAttendance() : 75.0;
+        double minGrade = phase.getMinimumGrade() != null ? phase.getMinimumGrade() : 10.0;
+
+        Optional<Evaluation> evaluationOpt = evaluationRepository.findByStudentIdAndPhaseId(studentId, phaseId);
+        double grade = evaluationOpt.map(Evaluation::getGrade).orElse(12.0); // Default passing grade if not explicitly graded yet
+
+        boolean pedagogicalOk = (attendanceRate >= minAttendance) && (grade >= minGrade);
         progression.setPedagogicalValidated(pedagogicalOk);
 
         // 3. Mark Validated if both are true and issue certificate

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,14 @@ public class Formation {
     private String category;
 
     private Double totalPrice;
+
+    private String status = "PLANIFIEE"; // ACTIVE | TERMINEE | PLANIFIEE
+
+    private boolean archived = false;
+
+    private LocalDate startDate;
+
+    private LocalDate endDate;
 
     @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL)
     private List<Phase> phases = new ArrayList<>();

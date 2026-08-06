@@ -2,6 +2,8 @@ package com._antra.the_bridge.dto;
 
 import com._antra.the_bridge.entity.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class DTOHelper {
@@ -27,17 +29,28 @@ public class DTOHelper {
 
     public static FormationDTO toDTO(Formation formation) {
         if (formation == null) return null;
+        List<Integer> studentIds = formation.getEnrollments() != null
+                ? formation.getEnrollments().stream()
+                    .filter(e -> e.getStudent() != null)
+                    .map(e -> e.getStudent().getId())
+                    .collect(Collectors.toList())
+                : new ArrayList<>();
         return FormationDTO.builder()
                 .id(formation.getId())
                 .title(formation.getTitle())
                 .description(formation.getDescription())
                 .category(formation.getCategory())
                 .totalPrice(formation.getTotalPrice())
-                .phases(formation.getPhases() != null ? 
+                .status(formation.getStatus() != null ? formation.getStatus() : "PLANIFIEE")
+                .archived(formation.isArchived())
+                .startDate(formation.getStartDate())
+                .endDate(formation.getEndDate())
+                .phases(formation.getPhases() != null ?
                         formation.getPhases().stream().map(DTOHelper::toDTO).collect(Collectors.toList()) : null)
                 .trainers(formation.getTrainers() != null ?
                         formation.getTrainers().stream().map(DTOHelper::toDTO).collect(Collectors.toList()) : null)
-                .enrollmentCount(formation.getEnrollments() != null ? formation.getEnrollments().size() : 0)
+                .students(studentIds)
+                .enrollmentCount(studentIds.size())
                 .build();
     }
 
@@ -52,6 +65,7 @@ public class DTOHelper {
                 .minimumAttendance(phase.getMinimumAttendance())
                 .minimumGrade(phase.getMinimumGrade())
                 .formationId(phase.getFormation() != null ? phase.getFormation().getId() : null)
+                .unlocked(phase.getPhaseOrder() == 1)
                 .sessions(phase.getSessions() != null ?
                         phase.getSessions().stream().map(DTOHelper::toDTO).collect(Collectors.toList()) : null)
                 .build();

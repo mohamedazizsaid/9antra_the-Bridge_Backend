@@ -5,6 +5,7 @@ import com._antra.the_bridge.dto.PhaseDTO;
 import com._antra.the_bridge.dto.SessionDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface FormationService {
     List<FormationDTO> getAllFormations();
@@ -15,9 +16,15 @@ public interface FormationService {
 
     // Creation & management
     FormationDTO createFormation(FormationDTO dto);
+    FormationDTO updateFormation(Long id, FormationDTO dto);
+    void archiveFormation(Long id);
+    void deleteFormation(Long id);
     PhaseDTO addPhaseToFormation(Long formationId, PhaseDTO dto);
     FormationDTO assignTrainers(Long formationId, List<Integer> trainerIds);
     SessionDTO addSessionToPhase(Long phaseId, SessionDTO dto);
-    void closeSession(Long sessionId);
-}
 
+    void closeSession(Long sessionId);
+    void unlockPhase(Long phaseId);
+
+    Map<String, Object> getDashboardStats();
+}

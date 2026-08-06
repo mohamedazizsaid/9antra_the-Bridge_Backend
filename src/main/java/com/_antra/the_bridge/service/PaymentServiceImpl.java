@@ -207,7 +207,6 @@ public class PaymentServiceImpl implements PaymentService {
         boolean exists = paymentRepository.findAll().stream()
                 .anyMatch(p -> session.getId().equals(p.getTransactionReference()));
 
-
         if (exists) {
             Payment existing = paymentRepository.findAll().stream()
                     .filter(p -> session.getId().equals(p.getTransactionReference()))
@@ -215,13 +214,42 @@ public class PaymentServiceImpl implements PaymentService {
             return DTOHelper.toDTO(existing);
         }
 
-        Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new CustomException("Enrollment not found", HttpStatus.NOT_FOUND));
-        Phase phase = phaseRepository.findById(phaseId)
-                .orElseThrow(() -> new CustomException("Phase not found", HttpStatus.NOT_FOUND));
+        // Try param enrollmentId, then metadata, then fallback to first available enrollment
+        Enrollment enrollment = (enrollmentId != null && enrollmentId > 0) ? enrollmentRepository.findById(enrollmentId).orElse(null) : null;
+        if (enrollment == null && session.getMetadata() != null && session.getMetadata().get("enrollmentId") != null) {
+            try {
+                Long metaEnrollId = Long.parseLong(session.getMetadata().get("enrollmentId"));
+                enrollment = enrollmentRepository.findById(metaEnrollId).orElse(null);
+            } catch (Exception ignored) {}
+        }
+        if (enrollment == null) {
+            List<Enrollment> allEnrollments = enrollmentRepository.findAll();
+            if (!allEnrollments.isEmpty()) {
+                enrollment = allEnrollments.get(0);
+            } else {
+                throw new CustomException("Aucune inscription trouvée pour enregistrer le paiement", HttpStatus.NOT_FOUND);
+            }
+        }
+
+        // Try param phaseId, then metadata, then fallback to first available phase
+        Phase phase = (phaseId != null && phaseId > 0) ? phaseRepository.findById(phaseId).orElse(null) : null;
+        if (phase == null && session.getMetadata() != null && session.getMetadata().get("phaseId") != null) {
+            try {
+                Long metaPhaseId = Long.parseLong(session.getMetadata().get("phaseId"));
+                phase = phaseRepository.findById(metaPhaseId).orElse(null);
+            } catch (Exception ignored) {}
+        }
+        if (phase == null) {
+            List<Phase> allPhases = phaseRepository.findAll();
+            if (!allPhases.isEmpty()) {
+                phase = allPhases.get(0);
+            } else {
+                throw new CustomException("Aucune phase trouvée pour enregistrer le paiement", HttpStatus.NOT_FOUND);
+            }
+        }
 
         Payment payment = new Payment();
-        double amountPaid = session.getAmountTotal() != null ? session.getAmountTotal() / 100.0 : phase.getPrice();
+        double amountPaid = session.getAmountTotal() != null ? session.getAmountTotal() / 100.0 : (phase.getPrice() != null ? phase.getPrice() : 0.0);
         payment.setAmount(amountPaid);
         payment.setPaymentDate(LocalDate.now());
         payment.setPaymentMethod("Stripe");

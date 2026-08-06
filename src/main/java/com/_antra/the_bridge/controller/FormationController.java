@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Tag(name = "Formations", description = "Endpoints pour la gestion des formations")
@@ -54,12 +55,38 @@ public class FormationController {
         return ResponseEntity.ok(formationService.getFormationDetailsForStudent(id, studentId));
     }
 
+    @GetMapping("/api/stats/dashboard")
+    @Operation(summary = "Statistiques globales du dashboard")
+    public ResponseEntity<Map<String, Object>> getDashboardStats() {
+        return ResponseEntity.ok(formationService.getDashboardStats());
+    }
+
     // ─── Creation & Management ────────────────────────────────────────────────
 
     @PostMapping("/api/formations")
     @Operation(summary = "Créer une nouvelle formation (avec phases et sessions optionnelles)")
     public ResponseEntity<FormationDTO> createFormation(@RequestBody FormationDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(formationService.createFormation(dto));
+    }
+
+    @PutMapping("/api/formations/{id}")
+    @Operation(summary = "Modifier une formation existante (titre, description, catégorie, prix, status)")
+    public ResponseEntity<FormationDTO> updateFormation(@PathVariable Long id, @RequestBody FormationDTO dto) {
+        return ResponseEntity.ok(formationService.updateFormation(id, dto));
+    }
+
+    @PatchMapping("/api/formations/{id}/archive")
+    @Operation(summary = "Archiver ou désarchiver une formation (toggle)")
+    public ResponseEntity<Void> archiveFormation(@PathVariable Long id) {
+        formationService.archiveFormation(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/api/formations/{id}")
+    @Operation(summary = "Supprimer une formation (admin ou formateur propriétaire)")
+    public ResponseEntity<Void> deleteFormation(@PathVariable Long id) {
+        formationService.deleteFormation(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/api/formations/{formationId}/phases")
@@ -92,5 +119,11 @@ public class FormationController {
         formationService.closeSession(sessionId);
         return ResponseEntity.ok().build();
     }
-}
 
+    @PostMapping("/api/phases/{phaseId}/unlock")
+    @Operation(summary = "Débloquer une phase par un formateur/admin")
+    public ResponseEntity<Void> unlockPhase(@PathVariable Long phaseId) {
+        formationService.unlockPhase(phaseId);
+        return ResponseEntity.ok().build();
+    }
+}

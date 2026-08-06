@@ -11,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -59,7 +61,18 @@ public class FormationServiceImpl implements FormationService {
     public FormationDTO getFormationById(Long id) {
         Formation formation = formationRepository.findById(id)
                 .orElseThrow(() -> new CustomException("Formation not found", HttpStatus.NOT_FOUND));
-        return DTOHelper.toDTO(formation);
+        FormationDTO dto = DTOHelper.toDTO(formation);
+        if (dto != null && dto.getPhases() != null) {
+            for (PhaseDTO phaseDTO : dto.getPhases()) {
+                boolean isUnlocked = phaseDTO.getPhaseOrder() != null && phaseDTO.getPhaseOrder() == 1;
+                List<Progression> progs = progressionRepository.findByPhaseId(phaseDTO.getId());
+                if (!progs.isEmpty() && progs.stream().anyMatch(Progression::isUnlocked)) {
+                    isUnlocked = true;
+                }
+                phaseDTO.setUnlocked(isUnlocked);
+            }
+        }
+        return dto;
     }
 
     @Override
@@ -154,14 +167,17 @@ public class FormationServiceImpl implements FormationService {
 
         Formation saved = formationRepository.save(formation);
 
-        // Create phases if provided
-        if (dto.getPhases() != null) {
+        // Create phases if provided and compute total price as sum of phase prices
+        double calculatedTotal = 0.0;
+        if (dto.getPhases() != null && !dto.getPhases().isEmpty()) {
             for (PhaseDTO phaseDTO : dto.getPhases()) {
                 Phase phase = new Phase();
                 phase.setPhaseOrder(phaseDTO.getPhaseOrder());
                 phase.setTitle(phaseDTO.getTitle());
                 phase.setContent(phaseDTO.getContent());
-                phase.setPrice(phaseDTO.getPrice());
+                double pPrice = phaseDTO.getPrice() != null ? phaseDTO.getPrice() : 0.0;
+                phase.setPrice(pPrice);
+                calculatedTotal += pPrice;
                 phase.setMinimumAttendance(phaseDTO.getMinimumAttendance() != null ? phaseDTO.getMinimumAttendance() : 75.0);
                 phase.setMinimumGrade(phaseDTO.getMinimumGrade() != null ? phaseDTO.getMinimumGrade() : 10.0);
                 phase.setFormation(saved);
@@ -181,6 +197,11 @@ public class FormationServiceImpl implements FormationService {
                     }
                 }
             }
+            saved.setTotalPrice(calculatedTotal);
+            formationRepository.save(saved);
+        } else if (dto.getTotalPrice() != null) {
+            saved.setTotalPrice(dto.getTotalPrice());
+            formationRepository.save(saved);
         }
 
         return DTOHelper.toDTO(formationRepository.findById(saved.getId()).orElse(saved));
@@ -195,12 +216,20 @@ public class FormationServiceImpl implements FormationService {
         phase.setPhaseOrder(dto.getPhaseOrder() > 0 ? dto.getPhaseOrder() : formation.getPhases().size() + 1);
         phase.setTitle(dto.getTitle());
         phase.setContent(dto.getContent());
-        phase.setPrice(dto.getPrice());
+        double pPrice = dto.getPrice() != null ? dto.getPrice() : 0.0;
+        phase.setPrice(pPrice);
         phase.setMinimumAttendance(dto.getMinimumAttendance() != null ? dto.getMinimumAttendance() : 75.0);
         phase.setMinimumGrade(dto.getMinimumGrade() != null ? dto.getMinimumGrade() : 10.0);
         phase.setFormation(formation);
 
-        return DTOHelper.toDTO(phaseRepository.save(phase));
+        Phase savedPhase = phaseRepository.save(phase);
+
+        // Recalculate formation total price
+        double sum = formation.getPhases().stream().mapToDouble(p -> p.getPrice() != null ? p.getPrice() : 0.0).sum() + pPrice;
+        formation.setTotalPrice(sum);
+        formationRepository.save(formation);
+
+        return DTOHelper.toDTO(savedPhase);
     }
 
     @Override
@@ -249,6 +278,76 @@ public class FormationServiceImpl implements FormationService {
             int studentId = enrollment.getStudent().getId();
             progressionService.checkAndUpdateProgress(studentId, phase.getId());
         }
+    }
+
+    @Override
+    public void unlockPhase(Long phaseId) {
+        Phase phase = phaseRepository.findById(phaseId)
+                .orElseThrow(() -> new CustomException("Phase not found", HttpStatus.NOT_FOUND));
+        Formation formation = phase.getFormation();
+        if (formation != null) {
+            List<Enrollment> enrollments = enrollmentRepository.findByFormationId(formation.getId());
+            for (Enrollment enrollment : enrollments) {
+                if (enrollment.getStudent() != null) {
+                    Progression progression = progressionRepository.findByStudentIdAndPhaseId(enrollment.getStudent().getId(), phaseId)
+                            .orElse(new Progression());
+                    if (progression.getId() == null) {
+                        progression.setStudent(enrollment.getStudent());
+                        progression.setPhase(phase);
+                    }
+                    progression.setUnlocked(true);
+                    progressionRepository.save(progression);
+                }
+            }
+        }
+    }
+
+    // ─── New CRUD Methods ──────────────────────────────────────────────────────
+
+    @Override
+    public FormationDTO updateFormation(Long id, FormationDTO dto) {
+        Formation formation = formationRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Formation not found", HttpStatus.NOT_FOUND));
+        if (dto.getTitle() != null) formation.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) formation.setDescription(dto.getDescription());
+        if (dto.getCategory() != null) formation.setCategory(dto.getCategory());
+        if (dto.getTotalPrice() != null) formation.setTotalPrice(dto.getTotalPrice());
+        if (dto.getStatus() != null) formation.setStatus(dto.getStatus());
+        if (dto.getStartDate() != null) formation.setStartDate(dto.getStartDate());
+        if (dto.getEndDate() != null) formation.setEndDate(dto.getEndDate());
+        return DTOHelper.toDTO(formationRepository.save(formation));
+    }
+
+    @Override
+    public void archiveFormation(Long id) {
+        Formation formation = formationRepository.findById(id)
+                .orElseThrow(() -> new CustomException("Formation not found", HttpStatus.NOT_FOUND));
+        formation.setArchived(!formation.isArchived());
+        formationRepository.save(formation);
+    }
+
+    @Override
+    public void deleteFormation(Long id) {
+        if (!formationRepository.existsById(id)) {
+            throw new CustomException("Formation not found", HttpStatus.NOT_FOUND);
+        }
+        formationRepository.deleteById(id);
+    }
+
+    @Override
+    public Map<String, Object> getDashboardStats() {
+        Map<String, Object> stats = new HashMap<>();
+        long totalFormations = formationRepository.count();
+        long totalUsers = userRepository.count();
+        long totalEnrollments = enrollmentRepository.count();
+        long totalFormateurs = userRepository.countByRole(com._antra.the_bridge.enumType.Role.FORMATEUR);
+        long totalStagiaires = userRepository.countByRole(com._antra.the_bridge.enumType.Role.STAGIAIRE);
+        stats.put("totalFormations", totalFormations);
+        stats.put("totalUsers", totalUsers);
+        stats.put("totalEnrollments", totalEnrollments);
+        stats.put("totalFormateurs", totalFormateurs);
+        stats.put("totalStagiaires", totalStagiaires);
+        return stats;
     }
 }
 
