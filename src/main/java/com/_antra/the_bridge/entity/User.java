@@ -22,6 +22,7 @@ public class User {
     private int id;
     private String firstName;
     private String lastName;
+    @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String avatar;
     private int age;
