@@ -39,13 +39,16 @@ public class CertificateServiceImpl implements CertificateService {
     private final CertificateRepository certificateRepository;
     private final UserRepository        userRepository;
     private final PhaseRepository       phaseRepository;
+    private final BlockchainService     blockchainService;
 
     public CertificateServiceImpl(CertificateRepository certificateRepository,
                                   UserRepository userRepository,
-                                  PhaseRepository phaseRepository) {
+                                  PhaseRepository phaseRepository,
+                                  BlockchainService blockchainService) {
         this.certificateRepository = certificateRepository;
         this.userRepository        = userRepository;
         this.phaseRepository       = phaseRepository;
+        this.blockchainService     = blockchainService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -75,12 +78,17 @@ public class CertificateServiceImpl implements CertificateService {
 
         String certNum = "CERT-" + String.format("%04d", (int)(Math.random() * 9000 + 1000))
                 + "-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        
-        // Genuine Cryptographic Blockchain Hash Seal (SHA-256 Digest of identity payload)
+
+        // Step 1: Build the identity payload that will be sealed on-chain
         String rawPayload = String.format("BRIDGE_CHAIN_v1|STUDENT:%d:%s|PHASE:%d:%s|TIME:%d",
                 student.getId(), student.getEmail(), phase.getId(), phase.getTitle(), System.currentTimeMillis());
+
+        // Step 2: SHA-256 fingerprint of the payload (the cert's canonical hash)
         String certHash = generateSha256(rawPayload);
-        String blockchainTx = "0x" + generateSha256("TX_PROOF:" + certHash + ":" + certNum);
+
+        // Step 3: Anchor on Polygon Amoy — returns REAL txHash if blockchain.enabled=true
+        //         or deterministic fallback 0x+sha256 if not configured
+        String blockchainTx = blockchainService.anchorOnChain(certHash);
 
         Certificate certificate = new Certificate();
         certificate.setCertificateNumber(certNum);

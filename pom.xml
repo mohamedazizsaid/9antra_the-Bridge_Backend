@@ -108,6 +108,20 @@
 			<artifactId>stripe-java</artifactId>
 			<version>24.0.0</version>
 		</dependency>
+
+		<!-- ─── Web3j: Real Polygon Blockchain Integration ─── -->
+		<dependency>
+			<groupId>org.web3j</groupId>
+			<artifactId>core</artifactId>
+			<version>4.10.3</version>
+			<exclusions>
+				<!-- Avoid OkHttp conflict with Spring Boot -->
+				<exclusion>
+					<groupId>com.squareup.okhttp3</groupId>
+					<artifactId>logging-interceptor</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
 
 
