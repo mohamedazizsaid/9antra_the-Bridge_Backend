@@ -4,6 +4,7 @@ import com._antra.the_bridge.entity.*;
 import com._antra.the_bridge.enumType.PaymentStatus;
 import com._antra.the_bridge.enumType.Role;
 import com._antra.the_bridge.enumType.Status;
+import com._antra.the_bridge.entity.Certificate;
 import com._antra.the_bridge.repository.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ public class DataSeeder implements CommandLineRunner {
     private final NotificationRepository notificationRepository;
     private final ProgressionRepository progressionRepository;
     private final AttendanceRepository attendanceRepository;
+    private final CertificateRepository certificateRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(UserRepository userRepository,
@@ -38,6 +40,7 @@ public class DataSeeder implements CommandLineRunner {
                       NotificationRepository notificationRepository,
                       ProgressionRepository progressionRepository,
                       AttendanceRepository attendanceRepository,
+                      CertificateRepository certificateRepository,
                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.formationRepository = formationRepository;
@@ -49,6 +52,7 @@ public class DataSeeder implements CommandLineRunner {
         this.notificationRepository = notificationRepository;
         this.progressionRepository = progressionRepository;
         this.attendanceRepository = attendanceRepository;
+        this.certificateRepository = certificateRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -75,7 +79,7 @@ public class DataSeeder implements CommandLineRunner {
                 "https://api.dicebear.com/7.x/initials/svg?seed=SB&backgroundColor=f5a623");
 
         User[] stagiaires = {
-            createUser("Mohamed", "Trabelsi", "m.trabelsi@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 24,
+            createUser("Mohamed", "Trabelsi", "m.trabelsi@email.com", "", Role.STAGIAIRE, Status.ACTIVE, 24,
                     "https://api.dicebear.com/7.x/initials/svg?seed=MT&backgroundColor=3b82f6"),
             createUser("Fatma", "Zahra", "f.zahra@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 22,
                     "https://api.dicebear.com/7.x/initials/svg?seed=FZ&backgroundColor=8b5cf6"),
@@ -224,20 +228,13 @@ public class DataSeeder implements CommandLineRunner {
         createEvaluation(formateur1, stagiaires[4], f4p2, 15.0, "Bon travail en ethical hacking.", "Kali Linux, Metasploit");
         createEvaluation(formateur1, stagiaires[4], f4p3, 14.5, "Bonne sécurisation.", "Firewall, SIEM");
 
-        // â”€â”€â”€ 11. Progression for F4 (all validated = certificates ready) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ——— 11. Progression for F4 (all validated = certificates ready) ———————————
         for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
             for (Phase p : List.of(f4p1, f4p2, f4p3)) {
                 createProgression(s, p, true, true, true, LocalDate.now().minusDays(20));
             }
         }
 
-        // â”€â”€â”€ 12. Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        createNotification(formateur1, "ðŸŽ“ Nouvelle Inscription", "Mohamed Trabelsi vient de rejoindre votre formation Full Stack.");
-        createNotification(formateur1, "ðŸ“‹ Séance Aujourd'hui", "Rappel : vous avez une Séance Angular ce matin Ã  10h00 en Salle Beta.");
-        createNotification(formateur2, "â­ Évaluation requise", "Les stagiaires de la phase Python attendent leur Ã©valuation.");
-        createNotification(stagiaires[0], "âœ… Inscription confirmée", "Votre inscription Ã  la formation Full Stack est confirmée. Bienvenue !");
-        createNotification(stagiaires[0], "ðŸ† Certification obtenue !", "Félicitations ! Vous avez obtenu votre certificat Blockchain pour la phase 'Fondamentaux de la Cybersécurité'. Note : 18.5/20");
-        createNotification(stagiaires[1], "ðŸ“š Nouvelle phase débloquée", "La phase Angular & Architecture Frontend est maintenant accessible.");
         createNotification(stagiaires[4], "ðŸ… Évaluation publiée", "Dr. Amine Hadj a publié votre Ã©valuation. Note : 18/20 â€” Excellent !");
 
         System.out.println("=== Bridge DataSeeder: Données initialisÃ©es avec succÃ¨s ===");
@@ -372,5 +369,48 @@ public class DataSeeder implements CommandLineRunner {
         prog.setUnlocked(unlocked);
         prog.setValidationDate(validationDate);
         progressionRepository.save(prog);
+    }
+
+    private void createCertificate(User student, Phase phase, LocalDate issueDate) {
+        // Skip if already exists
+        if (certificateRepository.findByStudentId(student.getId()).stream()
+                .anyMatch(c -> c.getPhase() != null && c.getPhase().getId().equals(phase.getId()))) {
+            return;
+        }
+        try {
+            String certNum = "CERT-" + String.format("%04d", (int)(Math.random() * 9000 + 1000))
+                    + "-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            String blockchainTx = "0x" + generateRandomHex(64);
+            String certHash = generateSha256(student.getEmail() + ":" + phase.getTitle() + ":" + certNum);
+
+            Certificate cert = new Certificate();
+            cert.setCertificateNumber(certNum);
+            cert.setPdfUrl("/api/certificates/download/" + certNum);
+            cert.setHashValue(certHash);
+            cert.setBlockchainTransactionHash(blockchainTx);
+            cert.setIssueDate(issueDate);
+            cert.setStudent(student);
+            cert.setPhase(phase);
+            certificateRepository.save(cert);
+        } catch (Exception e) {
+            System.err.println("[DataSeeder] Certificate seed failed: " + e.getMessage());
+        }
+    }
+
+    private String generateRandomHex(int length) {
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() < length) sb.append(Integer.toHexString(random.nextInt()));
+        return sb.toString().substring(0, length);
+    }
+
+    private String generateSha256(String input) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) { String h = Integer.toHexString(0xff & b); if (h.length() == 1) hex.append('0'); hex.append(h); }
+            return hex.toString();
+        } catch (Exception e) { throw new RuntimeException(e); }
     }
 }
