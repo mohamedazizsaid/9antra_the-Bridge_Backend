@@ -1,4 +1,4 @@
-package com._antra.the_bridge.config;
+﻿package com._antra.the_bridge.config;
 
 import com._antra.the_bridge.entity.*;
 import com._antra.the_bridge.enumType.PaymentStatus;
@@ -79,7 +79,7 @@ public class DataSeeder implements CommandLineRunner {
                 "https://api.dicebear.com/7.x/initials/svg?seed=SB&backgroundColor=f5a623");
 
         User[] stagiaires = {
-            createUser("Mohamed", "Trabelsi", "m.trabelsi@email.com", "", Role.STAGIAIRE, Status.ACTIVE, 24,
+            createUser("Mohamed", "Trabelsi", "m.trabelsi@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 24,
                     "https://api.dicebear.com/7.x/initials/svg?seed=MT&backgroundColor=3b82f6"),
             createUser("Fatma", "Zahra", "f.zahra@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 22,
                     "https://api.dicebear.com/7.x/initials/svg?seed=FZ&backgroundColor=8b5cf6"),
@@ -235,9 +235,29 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
-        createNotification(stagiaires[4], "ðŸ… Évaluation publiée", "Dr. Amine Hadj a publié votre Ã©valuation. Note : 18/20 â€” Excellent !");
+        // ─── 12. Certificates — auto-emitted for stagiaires who completed F4 ────────
+        createCertificate(stagiaires[0], f4p1, LocalDate.now().minusDays(19));
+        createCertificate(stagiaires[0], f4p2, LocalDate.now().minusDays(18));
+        createCertificate(stagiaires[0], f4p3, LocalDate.now().minusDays(17));
+        createCertificate(stagiaires[2], f4p1, LocalDate.now().minusDays(19));
+        createCertificate(stagiaires[2], f4p2, LocalDate.now().minusDays(18));
+        createCertificate(stagiaires[2], f4p3, LocalDate.now().minusDays(17));
+        createCertificate(stagiaires[4], f4p1, LocalDate.now().minusDays(19));
+        createCertificate(stagiaires[4], f4p2, LocalDate.now().minusDays(18));
+        createCertificate(stagiaires[4], f4p3, LocalDate.now().minusDays(17));
 
-        System.out.println("=== Bridge DataSeeder: Données initialisÃ©es avec succÃ¨s ===");
+        // ─── 13. Notifications ─────────────────────────────────────────────────────
+        createNotification(formateur1, "Nouvelle Inscription", "Mohamed Trabelsi vient de rejoindre votre formation Full Stack.");
+        createNotification(formateur1, "Seance Aujourd'hui", "Rappel : vous avez une seance Angular ce matin a 10h00 en Salle Beta.");
+        createNotification(formateur2, "Evaluation requise", "Les stagiaires de la phase Python attendent leur evaluation.");
+        createNotification(stagiaires[0], "Inscription confirmee", "Votre inscription a la formation Full Stack est confirmee. Bienvenue !");
+        createNotification(stagiaires[0], "Certification obtenue !", "Felicitations ! Certificat blockchain emis pour la phase 'Fondamentaux de la Cybersecurite'. Note : 18.5/20");
+        createNotification(stagiaires[0], "Certification obtenue !", "Felicitations ! Certificat blockchain emis pour la phase 'Pentesting & Ethical Hacking'. Note : 17.0/20");
+        createNotification(stagiaires[0], "Certification obtenue !", "Felicitations ! Certificat blockchain emis pour la phase 'Securisation des Infrastructures'. Note : 16.5/20");
+        createNotification(stagiaires[1], "Nouvelle phase debloquee", "La phase Angular & Architecture Frontend est maintenant accessible.");
+        createNotification(stagiaires[4], "Evaluation publiee", "Dr. Amine Hadj a publie votre evaluation. Note : 18/20 - Excellent !");
+
+        System.out.println("=== Bridge DataSeeder: Donnees initialisees avec succes ===");
     }
 
     // â”€â”€â”€ Helper Methods â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
