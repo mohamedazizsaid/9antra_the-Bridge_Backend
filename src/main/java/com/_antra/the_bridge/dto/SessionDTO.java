@@ -24,5 +24,6 @@ public class SessionDTO {
     private String phaseTitle;
     private Long formationId;
     private String formationTitle;
+    private boolean closed;
     private List<AttendanceDTO> attendances;
 }

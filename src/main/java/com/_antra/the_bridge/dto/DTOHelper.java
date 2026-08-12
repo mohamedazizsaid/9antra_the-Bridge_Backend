@@ -86,6 +86,7 @@ public class DTOHelper {
                         session.getPhase().getFormation().getId() : null)
                 .formationTitle(session.getPhase() != null && session.getPhase().getFormation() != null ? 
                         session.getPhase().getFormation().getTitle() : null)
+                .closed(session.isClosed())
                 .attendances(session.getAttendances() != null ?
                         session.getAttendances().stream().map(DTOHelper::toDTO).collect(Collectors.toList()) : null)
                 .build();

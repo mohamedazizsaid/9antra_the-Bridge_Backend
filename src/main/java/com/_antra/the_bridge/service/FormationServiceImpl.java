@@ -266,6 +266,10 @@ public class FormationServiceImpl implements FormationService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new CustomException("Session not found", HttpStatus.NOT_FOUND));
 
+        // Mark the session as closed and persist it
+        session.setClosed(true);
+        sessionRepository.save(session);
+
         Phase phase = session.getPhase();
         if (phase == null) return;
 

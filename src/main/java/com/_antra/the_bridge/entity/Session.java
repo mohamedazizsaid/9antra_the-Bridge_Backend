@@ -34,6 +34,8 @@ public class Session {
     @JoinColumn(name = "phase_id")
     private Phase phase;
 
+    private boolean closed = false;
+
     @OneToMany(mappedBy = "session")
     private List<Attendance> attendances = new ArrayList<>();
 }
