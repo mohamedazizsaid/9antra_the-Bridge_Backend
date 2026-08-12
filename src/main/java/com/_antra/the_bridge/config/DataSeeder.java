@@ -1,4 +1,4 @@
-﻿package com._antra.the_bridge.config;
+package com._antra.the_bridge.config;
 
 import com._antra.the_bridge.entity.*;
 import com._antra.the_bridge.enumType.PaymentStatus;

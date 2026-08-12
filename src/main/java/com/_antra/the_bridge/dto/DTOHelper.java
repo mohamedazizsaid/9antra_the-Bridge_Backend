@@ -56,6 +56,30 @@ public class DTOHelper {
 
     public static PhaseDTO toDTO(Phase phase) {
         if (phase == null) return null;
+
+        // Compute real attendance rate from closed sessions
+        double attendanceRate = 0.0;
+        if (phase.getSessions() != null) {
+            List<Session> closedSessions = phase.getSessions().stream()
+                    .filter(Session::isClosed)
+                    .collect(Collectors.toList());
+            if (!closedSessions.isEmpty()) {
+                long totalSlots = 0;
+                long totalPresent = 0;
+                for (Session s : closedSessions) {
+                    if (s.getAttendances() != null && !s.getAttendances().isEmpty()) {
+                        totalSlots += s.getAttendances().size();
+                        totalPresent += s.getAttendances().stream()
+                                .filter(a -> Boolean.TRUE.equals(a.getPresent()))
+                                .count();
+                    }
+                }
+                if (totalSlots > 0) {
+                    attendanceRate = (double) totalPresent / totalSlots * 100.0;
+                }
+            }
+        }
+
         return PhaseDTO.builder()
                 .id(phase.getId())
                 .phaseOrder(phase.getPhaseOrder())
@@ -66,6 +90,7 @@ public class DTOHelper {
                 .minimumGrade(phase.getMinimumGrade())
                 .formationId(phase.getFormation() != null ? phase.getFormation().getId() : null)
                 .unlocked(phase.getPhaseOrder() == 1)
+                .attendanceRate(attendanceRate)
                 .sessions(phase.getSessions() != null ?
                         phase.getSessions().stream().map(DTOHelper::toDTO).collect(Collectors.toList()) : null)
                 .build();
