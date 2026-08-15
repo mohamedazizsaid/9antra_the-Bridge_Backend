@@ -1,0 +1,40 @@
+# Git internals — never needed in Docker image
+.git
+.gitignore
+.gitattributes
+
+# Environment secrets — NEVER copy these into an image
+.env
+.env.*
+
+# IDE and OS files
+.idea
+*.iml
+*.iws
+*.ipr
+.vscode
+.DS_Store
+Thumbs.db
+
+# Maven build output (multi-stage build handles this, but exclude for safety)
+target/
+
+# Documentation
+*.md
+HELP.md
+README.md
+
+# CI/CD configs — not needed in runtime image
+.github/
+k8s/
+docker-compose*.yml
+
+# Test resources
+src/test/
+
+# Maven wrapper (already have Maven in build stage)
+.mvn/
+
+# Local config files
+owasp-suppressions.xml
+sonar-project.properties
