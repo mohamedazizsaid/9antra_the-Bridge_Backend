@@ -17,389 +17,456 @@ import java.util.List;
 @Component
 public class DataSeeder implements CommandLineRunner {
 
-    private final UserRepository userRepository;
-    private final FormationRepository formationRepository;
-    private final PhaseRepository phaseRepository;
-    private final SessionRepository sessionRepository;
-    private final EnrollmentRepository enrollmentRepository;
-    private final PaymentRepository paymentRepository;
-    private final EvaluationRepository evaluationRepository;
-    private final NotificationRepository notificationRepository;
-    private final ProgressionRepository progressionRepository;
-    private final AttendanceRepository attendanceRepository;
-    private final CertificateRepository certificateRepository;
-    private final PasswordEncoder passwordEncoder;
+        private final UserRepository userRepository;
+        private final FormationRepository formationRepository;
+        private final PhaseRepository phaseRepository;
+        private final SessionRepository sessionRepository;
+        private final EnrollmentRepository enrollmentRepository;
+        private final PaymentRepository paymentRepository;
+        private final EvaluationRepository evaluationRepository;
+        private final NotificationRepository notificationRepository;
+        private final ProgressionRepository progressionRepository;
+        private final AttendanceRepository attendanceRepository;
+        private final CertificateRepository certificateRepository;
+        private final PasswordEncoder passwordEncoder;
 
-    public DataSeeder(UserRepository userRepository,
-                      FormationRepository formationRepository,
-                      PhaseRepository phaseRepository,
-                      SessionRepository sessionRepository,
-                      EnrollmentRepository enrollmentRepository,
-                      PaymentRepository paymentRepository,
-                      EvaluationRepository evaluationRepository,
-                      NotificationRepository notificationRepository,
-                      ProgressionRepository progressionRepository,
-                      AttendanceRepository attendanceRepository,
-                      CertificateRepository certificateRepository,
-                      PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.formationRepository = formationRepository;
-        this.phaseRepository = phaseRepository;
-        this.sessionRepository = sessionRepository;
-        this.enrollmentRepository = enrollmentRepository;
-        this.paymentRepository = paymentRepository;
-        this.evaluationRepository = evaluationRepository;
-        this.notificationRepository = notificationRepository;
-        this.progressionRepository = progressionRepository;
-        this.attendanceRepository = attendanceRepository;
-        this.certificateRepository = certificateRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
-
-    @Override
-    public void run(String... args) {
-        if (userRepository.count() > 0) {
-            return;
+        public DataSeeder(UserRepository userRepository,
+                        FormationRepository formationRepository,
+                        PhaseRepository phaseRepository,
+                        SessionRepository sessionRepository,
+                        EnrollmentRepository enrollmentRepository,
+                        PaymentRepository paymentRepository,
+                        EvaluationRepository evaluationRepository,
+                        NotificationRepository notificationRepository,
+                        ProgressionRepository progressionRepository,
+                        AttendanceRepository attendanceRepository,
+                        CertificateRepository certificateRepository,
+                        PasswordEncoder passwordEncoder) {
+                this.userRepository = userRepository;
+                this.formationRepository = formationRepository;
+                this.phaseRepository = phaseRepository;
+                this.sessionRepository = sessionRepository;
+                this.enrollmentRepository = enrollmentRepository;
+                this.paymentRepository = paymentRepository;
+                this.evaluationRepository = evaluationRepository;
+                this.notificationRepository = notificationRepository;
+                this.progressionRepository = progressionRepository;
+                this.attendanceRepository = attendanceRepository;
+                this.certificateRepository = certificateRepository;
+                this.passwordEncoder = passwordEncoder;
         }
 
-        System.out.println("=== Bridge DataSeeder: Initialisation des Donnees ===");
+        @Override
+        public void run(String... args) {
+                if (userRepository.count() > 0) {
+                        return;
+                }
 
-        createUser("Karim", "Bennani", "karim.bennani@9antra.tn",
-                "admin123", Role.ADMIN, Status.ACTIVE, 40,
-                "https://api.dicebear.com/7.x/initials/svg?seed=KB&backgroundColor=c62761");
+                System.out.println("=== Bridge DataSeeder: Initialisation des Donnees ===");
 
-        User formateur1 = createUser("Amine", "Hadj", "amine.hadj@9antra.tn",
-                "form123", Role.FORMATEUR, Status.ACTIVE, 35,
-                "https://api.dicebear.com/7.x/initials/svg?seed=AH&backgroundColor=c62761");
+                createUser("Karim", "Bennani", "karim.bennani@9antra.tn",
+                                "admin123", Role.ADMIN, Status.ACTIVE, 40,
+                                "https://api.dicebear.com/7.x/initials/svg?seed=KB&backgroundColor=c62761");
 
-        User formateur2 = createUser("Sonia", "Belhadj", "sonia.belhadj@9antra.tn",
-                "form123", Role.FORMATEUR, Status.ACTIVE, 32,
-                "https://api.dicebear.com/7.x/initials/svg?seed=SB&backgroundColor=f5a623");
+                User formateur1 = createUser("Amine", "Hadj", "amine.hadj@9antra.tn",
+                                "form123", Role.FORMATEUR, Status.ACTIVE, 35,
+                                "https://api.dicebear.com/7.x/initials/svg?seed=AH&backgroundColor=c62761");
 
-        User[] stagiaires = {
-            createUser("Mohamed", "Trabelsi", "m.trabelsi@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 24,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=MT&backgroundColor=3b82f6"),
-            createUser("Fatma", "Zahra", "f.zahra@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 22,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=FZ&backgroundColor=8b5cf6"),
-            createUser("Yassine", "Khelifi", "y.khelifi@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 26,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=YK&backgroundColor=10b981"),
-            createUser("Nour", "Mghirbi", "n.mghirbi@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 23,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=NM&backgroundColor=f59e0b"),
-            createUser("Samir", "Benhassine", "s.benhassine@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 28,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=SB2&backgroundColor=ef4444"),
-            createUser("Rim", "Chatti", "r.chatti@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 21,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=RC&backgroundColor=06b6d4"),
-            createUser("Bilel", "Ayari", "b.ayari@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 25,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=BA&backgroundColor=84cc16"),
-            createUser("Houda", "Sassi", "h.sassi@email.com", "pass123", Role.STAGIAIRE, Status.ACTIVE, 27,
-                    "https://api.dicebear.com/7.x/initials/svg?seed=HS&backgroundColor=f472b6"),
-        };
+                User formateur2 = createUser("Sonia", "Belhadj", "sonia.belhadj@9antra.tn",
+                                "form123", Role.FORMATEUR, Status.ACTIVE, 32,
+                                "https://api.dicebear.com/7.x/initials/svg?seed=SB&backgroundColor=f5a623");
 
-        Formation f1 = createFormation("Developpement Full Stack - Spring Boot & Angular",
-                "Maitrisez l'architecture microservices et le developpement full stack moderne avec Spring Boot et Angular.",
-                "Developpement Web", 1800.0, List.of(formateur1));
+                User[] stagiaires = {
+                                createUser("Mohamed", "Trabelsi", "m.trabelsi@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 24,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=MT&backgroundColor=3b82f6"),
+                                createUser("Fatma", "Zahra", "f.zahra@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 22,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=FZ&backgroundColor=8b5cf6"),
+                                createUser("Yassine", "Khelifi", "y.khelifi@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 26,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=YK&backgroundColor=10b981"),
+                                createUser("Nour", "Mghirbi", "n.mghirbi@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 23,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=NM&backgroundColor=f59e0b"),
+                                createUser("Samir", "Benhassine", "s.benhassine@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 28,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=SB2&backgroundColor=ef4444"),
+                                createUser("Rim", "Chatti", "r.chatti@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 21,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=RC&backgroundColor=06b6d4"),
+                                createUser("Bilel", "Ayari", "b.ayari@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 25,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=BA&backgroundColor=84cc16"),
+                                createUser("Houda", "Sassi", "h.sassi@email.com", "pass123", Role.STAGIAIRE,
+                                                Status.ACTIVE, 27,
+                                                "https://api.dicebear.com/7.x/initials/svg?seed=HS&backgroundColor=f472b6"),
+                };
 
-        Formation f2 = createFormation("Data Science & Machine Learning avec Python",
-                "Plongez dans le monde de la data science : analyse exploratoire, modelisation ML, deep learning.",
-                "Data & IA", 2200.0, List.of(formateur2));
+                Formation f1 = createFormation("Developpement Full Stack - Spring Boot & Angular",
+                                "Maitrisez l'architecture microservices et le developpement full stack moderne avec Spring Boot et Angular.",
+                                "Developpement Web", 1800.0, List.of(formateur1));
 
-        Formation f3 = createFormation("DevOps & Cloud Engineering - AWS & Docker",
-                "Formation DevOps complete : CI/CD, containerisation Docker/Kubernetes, infrastructure as code.",
-                "DevOps & Cloud", 2500.0, List.of(formateur1, formateur2));
+                Formation f2 = createFormation("Data Science & Machine Learning avec Python",
+                                "Plongez dans le monde de la data science : analyse exploratoire, modelisation ML, deep learning.",
+                                "Data & IA", 2200.0, List.of(formateur2));
 
-        Formation f4 = createFormation("Cybersecurite & Ethical Hacking",
-                "Formation complete en Cybersecurite : pentesting, OWASP Top 10, securisation des infrastructures et ethical hacking. Certification reconnue par l'industrie.",
-                "Cybersecurite", 3200.0, List.of(formateur1));
+                Formation f3 = createFormation("DevOps & Cloud Engineering - AWS & Docker",
+                                "Formation DevOps complete : CI/CD, containerisation Docker/Kubernetes, infrastructure as code.",
+                                "DevOps & Cloud", 2500.0, List.of(formateur1, formateur2));
 
-        Phase f1p1 = createPhase(f1, 1, "Fondamentaux Java & Spring Boot",
-                "Architecture REST, JPA/Hibernate, Spring Security, JWT.", 600.0);
-        Phase f1p2 = createPhase(f1, 2, "Angular & Architecture Frontend",
-                "Composants, Services, RxJS, State Management.", 700.0);
-        Phase f1p3 = createPhase(f1, 3, "Projet Fil Rouge & Deploiement",
-                "Conception et realisation d'une application complete.", 500.0);
+                Formation f4 = createFormation("Cybersecurite & Ethical Hacking",
+                                "Formation complete en Cybersecurite : pentesting, OWASP Top 10, securisation des infrastructures et ethical hacking. Certification reconnue par l'industrie.",
+                                "Cybersecurite", 3200.0, List.of(formateur1));
 
-        Phase f2p1 = createPhase(f2, 1, "Python & Analyse de Donnees",
-                "NumPy, Pandas, Matplotlib.", 700.0);
-        Phase f2p2 = createPhase(f2, 2, "Machine Learning Applique",
-                "Regression, Classification, Clustering.", 800.0);
-        Phase f2p3 = createPhase(f2, 3, "Deep Learning & Mise en Production",
-                "Reseaux de neurones avec Keras/TensorFlow.", 700.0);
+                Phase f1p1 = createPhase(f1, 1, "Fondamentaux Java & Spring Boot",
+                                "Architecture REST, JPA/Hibernate, Spring Security, JWT.", 600.0);
+                Phase f1p2 = createPhase(f1, 2, "Angular & Architecture Frontend",
+                                "Composants, Services, RxJS, State Management.", 700.0);
+                Phase f1p3 = createPhase(f1, 3, "Projet Fil Rouge & Deploiement",
+                                "Conception et realisation d'une application complete.", 500.0);
 
-        Phase f3p1 = createPhase(f3, 1, "Containerisation Docker & Kubernetes",
-                "Images Docker, Docker Compose, Kubernetes.", 800.0);
-        Phase f3p2 = createPhase(f3, 2, "CI/CD & Infrastructure as Code",
-                "GitHub Actions, GitLab CI, Terraform.", 950.0);
-        Phase f3p3 = createPhase(f3, 3, "Cloud AWS - Architecture & Securite",
-                "EC2, S3, RDS, Lambda, IAM, VPC.", 750.0);
+                Phase f2p1 = createPhase(f2, 1, "Python & Analyse de Donnees",
+                                "NumPy, Pandas, Matplotlib.", 700.0);
+                Phase f2p2 = createPhase(f2, 2, "Machine Learning Applique",
+                                "Regression, Classification, Clustering.", 800.0);
+                Phase f2p3 = createPhase(f2, 3, "Deep Learning & Mise en Production",
+                                "Reseaux de neurones avec Keras/TensorFlow.", 700.0);
 
-        Phase f4p1 = createPhase(f4, 1, "Fondamentaux de la Cybersecurite",
-                "Concepts de base, modeles de menaces, cryptographie, protocoles securises.", 900.0);
-        Phase f4p2 = createPhase(f4, 2, "Pentesting & Ethical Hacking",
-                "Kali Linux, Metasploit, Nmap, BurpSuite, OWASP Top 10 attacks.", 1100.0);
-        Phase f4p3 = createPhase(f4, 3, "Securisation des Infrastructures",
-                "Firewall, IDS/IPS, SIEM, Zero Trust Architecture, audit de Securite.", 1200.0);
+                Phase f3p1 = createPhase(f3, 1, "Containerisation Docker & Kubernetes",
+                                "Images Docker, Docker Compose, Kubernetes.", 800.0);
+                Phase f3p2 = createPhase(f3, 2, "CI/CD & Infrastructure as Code",
+                                "GitHub Actions, GitLab CI, Terraform.", 950.0);
+                Phase f3p3 = createPhase(f3, 3, "Cloud AWS - Architecture & Securite",
+                                "EC2, S3, RDS, Lambda, IAM, VPC.", 750.0);
 
-        createSession(f1p1, LocalDate.now().minusDays(30), "09:00", 3, "Salle Alpha", null);
-        createSession(f1p1, LocalDate.now().minusDays(23), "09:00", 3, "Salle Alpha", null);
-        createSession(f1p1, LocalDate.now().minusDays(16), "14:00", 3, "Salle Alpha", null);
-        createSession(f1p1, LocalDate.now().minusDays(9), "09:00", 3, "Salle Alpha", null);
-        createSession(f1p2, LocalDate.now().minusDays(5), "09:00", 3, "Salle Beta", null);
-        createSession(f1p2, LocalDate.now(), "10:00", 3, "Salle Beta", null);
-        createSession(f1p2, LocalDate.now().plusDays(7), "09:00", 3, "Salle Beta", null);
-        createSession(f1p2, LocalDate.now().plusDays(14), "14:00", 3, "Salle Beta", "https://meet.google.com/bridge-f1-p2");
-        createSession(f1p3, LocalDate.now().plusDays(21), "09:00", 4, "Lab Cloud", "https://meet.google.com/bridge-f1-p3");
-        createSession(f1p3, LocalDate.now().plusDays(28), "09:00", 4, "Lab Cloud", "https://meet.google.com/bridge-f1-p3");
+                Phase f4p1 = createPhase(f4, 1, "Fondamentaux de la Cybersecurite",
+                                "Concepts de base, modeles de menaces, cryptographie, protocoles securises.", 900.0);
+                Phase f4p2 = createPhase(f4, 2, "Pentesting & Ethical Hacking",
+                                "Kali Linux, Metasploit, Nmap, BurpSuite, OWASP Top 10 attacks.", 1100.0);
+                Phase f4p3 = createPhase(f4, 3, "Securisation des Infrastructures",
+                                "Firewall, IDS/IPS, SIEM, Zero Trust Architecture, audit de Securite.", 1200.0);
 
-        createSession(f2p1, LocalDate.now().minusDays(20), "09:00", 3, "Salle Data", null);
-        createSession(f2p1, LocalDate.now().minusDays(13), "09:00", 3, "Salle Data", null);
-        createSession(f2p1, LocalDate.now().plusDays(1), "14:00", 3, "Salle Data", null);
+                createSession(f1p1, LocalDate.now().minusDays(30), "09:00", 3, "Salle Alpha", null);
+                createSession(f1p1, LocalDate.now().minusDays(23), "09:00", 3, "Salle Alpha", null);
+                createSession(f1p1, LocalDate.now().minusDays(16), "14:00", 3, "Salle Alpha", null);
+                createSession(f1p1, LocalDate.now().minusDays(9), "09:00", 3, "Salle Alpha", null);
+                createSession(f1p2, LocalDate.now().minusDays(5), "09:00", 3, "Salle Beta", null);
+                createSession(f1p2, LocalDate.now(), "10:00", 3, "Salle Beta", null);
+                createSession(f1p2, LocalDate.now().plusDays(7), "09:00", 3, "Salle Beta", null);
+                createSession(f1p2, LocalDate.now().plusDays(14), "14:00", 3, "Salle Beta",
+                                "https://meet.google.com/bridge-f1-p2");
+                createSession(f1p3, LocalDate.now().plusDays(21), "09:00", 4, "Lab Cloud",
+                                "https://meet.google.com/bridge-f1-p3");
+                createSession(f1p3, LocalDate.now().plusDays(28), "09:00", 4, "Lab Cloud",
+                                "https://meet.google.com/bridge-f1-p3");
 
-        createSession(f3p1, LocalDate.now().plusDays(3), "09:00", 4, "Lab DevOps", null);
-        createSession(f3p1, LocalDate.now().plusDays(10), "09:00", 4, "Lab DevOps", "https://meet.google.com/bridge-f3-p1");
+                createSession(f2p1, LocalDate.now().minusDays(20), "09:00", 3, "Salle Data", null);
+                createSession(f2p1, LocalDate.now().minusDays(13), "09:00", 3, "Salle Data", null);
+                createSession(f2p1, LocalDate.now().plusDays(1), "14:00", 3, "Salle Data", null);
 
-        Session f4p1s1 = createSession(f4p1, LocalDate.now().minusDays(90), "09:00", 4, "Lab Cyber", null);
-        Session f4p1s2 = createSession(f4p1, LocalDate.now().minusDays(83), "09:00", 4, "Lab Cyber", null);
-        Session f4p1s3 = createSession(f4p1, LocalDate.now().minusDays(76), "14:00", 4, "Lab Cyber", null);
-        Session f4p2s1 = createSession(f4p2, LocalDate.now().minusDays(65), "09:00", 4, "Lab Pentest", null);
-        Session f4p2s2 = createSession(f4p2, LocalDate.now().minusDays(58), "09:00", 4, "Lab Pentest", null);
-        Session f4p2s3 = createSession(f4p2, LocalDate.now().minusDays(51), "14:00", 4, "Lab Pentest", null);
-        Session f4p3s1 = createSession(f4p3, LocalDate.now().minusDays(40), "09:00", 4, "Lab Infra", null);
-        Session f4p3s2 = createSession(f4p3, LocalDate.now().minusDays(33), "09:00", 4, "Lab Infra", null);
-        Session f4p3s3 = createSession(f4p3, LocalDate.now().minusDays(26), "14:00", 4, "Lab Infra", null);
+                createSession(f3p1, LocalDate.now().plusDays(3), "09:00", 4, "Lab DevOps", null);
+                createSession(f3p1, LocalDate.now().plusDays(10), "09:00", 4, "Lab DevOps",
+                                "https://meet.google.com/bridge-f3-p1");
 
-        enrollStudent(stagiaires[0], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[1], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[2], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[3], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[4], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[2], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[5], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[6], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[7], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[0], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[1], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING, PaymentStatus.PENDING, PaymentStatus.PENDING);
-        enrollStudent(stagiaires[4], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING, PaymentStatus.PENDING, PaymentStatus.PENDING);
+                Session f4p1s1 = createSession(f4p1, LocalDate.now().minusDays(90), "09:00", 4, "Lab Cyber", null);
+                Session f4p1s2 = createSession(f4p1, LocalDate.now().minusDays(83), "09:00", 4, "Lab Cyber", null);
+                Session f4p1s3 = createSession(f4p1, LocalDate.now().minusDays(76), "14:00", 4, "Lab Cyber", null);
+                Session f4p2s1 = createSession(f4p2, LocalDate.now().minusDays(65), "09:00", 4, "Lab Pentest", null);
+                Session f4p2s2 = createSession(f4p2, LocalDate.now().minusDays(58), "09:00", 4, "Lab Pentest", null);
+                Session f4p2s3 = createSession(f4p2, LocalDate.now().minusDays(51), "14:00", 4, "Lab Pentest", null);
+                Session f4p3s1 = createSession(f4p3, LocalDate.now().minusDays(40), "09:00", 4, "Lab Infra", null);
+                Session f4p3s2 = createSession(f4p3, LocalDate.now().minusDays(33), "09:00", 4, "Lab Infra", null);
+                Session f4p3s3 = createSession(f4p3, LocalDate.now().minusDays(26), "14:00", 4, "Lab Infra", null);
 
-        enrollStudent(stagiaires[0], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED, PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
-        enrollStudent(stagiaires[2], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED, PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
-        enrollStudent(stagiaires[4], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED, PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
+                enrollStudent(stagiaires[0], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[1], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[2], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[3], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[4], f1, List.of(f1p1, f1p2, f1p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[2], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[5], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[6], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[7], f2, List.of(f2p1, f2p2, f2p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[0], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[1], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
+                enrollStudent(stagiaires[4], f3, List.of(f3p1, f3p2, f3p3), PaymentStatus.PENDING,
+                                PaymentStatus.PENDING, PaymentStatus.PENDING);
 
-        for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
-            for (Session sess : List.of(f4p1s1, f4p1s2, f4p1s3, f4p2s1, f4p2s2, f4p2s3, f4p3s1, f4p3s2, f4p3s3)) {
-                createAttendance(s, sess, true, 5, "Excellente participation");
-            }
+                enrollStudent(stagiaires[0], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
+                enrollStudent(stagiaires[2], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
+                enrollStudent(stagiaires[4], f4, List.of(f4p1, f4p2, f4p3), PaymentStatus.COMPLETED,
+                                PaymentStatus.COMPLETED, PaymentStatus.COMPLETED);
+
+                for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
+                        for (Session sess : List.of(f4p1s1, f4p1s2, f4p1s3, f4p2s1, f4p2s2, f4p2s3, f4p3s1, f4p3s2,
+                                        f4p3s3)) {
+                                createAttendance(s, sess, true, 5, "Excellente participation");
+                        }
+                }
+
+                createEvaluation(formateur1, stagiaires[0], f1p1, 17.5,
+                                "Excellent travail. Maitrise parfaite des fondamentaux Spring Boot.",
+                                "Spring Boot, JPA, Spring Security, JWT, REST API");
+                createEvaluation(formateur1, stagiaires[1], f1p1, 15.0,
+                                "Tres bon niveau. Quelques erreurs de gestion d'exceptions.",
+                                "Spring Boot, JPA, REST API, Maven");
+                createEvaluation(formateur1, stagiaires[2], f1p1, 14.0,
+                                "Bon travail. L'architecture REST est correcte.", "Spring Boot, JPA, REST API");
+                createEvaluation(formateur1, stagiaires[3], f1p1, 12.5, "Niveau satisfaisant. Doit approfondir JPA.",
+                                "Spring Boot, JPA");
+                createEvaluation(formateur1, stagiaires[4], f1p1, 18.0,
+                                "Performance remarquable. Code propre, architecture exemplaire.",
+                                "Spring Boot, JPA, Spring Security, JWT, Docker");
+
+                createEvaluation(formateur2, stagiaires[5], f2p1, 16.0, "Excellente Maitrise de Pandas et NumPy.",
+                                "Python, Pandas, NumPy, Matplotlib, Seaborn");
+                createEvaluation(formateur2, stagiaires[6], f2p1, 13.0, "Bon niveau general.", "Python, Pandas, NumPy");
+                createEvaluation(formateur2, stagiaires[7], f2p1, 15.5, "Tres bon travail.",
+                                "Python, Pandas, NumPy, Matplotlib");
+
+                createEvaluation(formateur1, stagiaires[0], f4p1, 18.5,
+                                "Maitrise exceptionnelle des fondamentaux de la Cybersecurite. Analyse de menaces remarquable.",
+                                "Cryptographie, Protocoles TLS/SSL, Modeles de menaces, Securite reseau");
+                createEvaluation(formateur1, stagiaires[0], f4p2, 17.0,
+                                "Excellent travail en pentesting. Exploitation OWASP Top 10 maitrisee.",
+                                "Kali Linux, Metasploit, BurpSuite, OWASP, Nmap");
+                createEvaluation(formateur1, stagiaires[0], f4p3, 16.5,
+                                "Tres bonne securisation des infrastructures. Architecture Zero Trust bien comprise.",
+                                "Firewall, SIEM, IDS/IPS, Zero Trust, Audit");
+                createEvaluation(formateur1, stagiaires[2], f4p1, 15.5,
+                                "Bonne comprehension des concepts de Cybersecurite.",
+                                "Cryptographie, Protocoles TLS/SSL, Securite reseau");
+                createEvaluation(formateur1, stagiaires[2], f4p2, 14.5, "Bon niveau en pentesting.",
+                                "Kali Linux, Metasploit, BurpSuite");
+                createEvaluation(formateur1, stagiaires[2], f4p3, 14.0, "Infrastructure bien securisee.",
+                                "Firewall, SIEM, IDS/IPS");
+                createEvaluation(formateur1, stagiaires[4], f4p1, 16.0, "Tres bonne Maitrise.",
+                                "Cryptographie, Protocoles TLS/SSL");
+                createEvaluation(formateur1, stagiaires[4], f4p2, 15.0, "Bon travail en ethical hacking.",
+                                "Kali Linux, Metasploit");
+                createEvaluation(formateur1, stagiaires[4], f4p3, 14.5, "Bonne securisation.", "Firewall, SIEM");
+
+                for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
+                        for (Phase p : List.of(f4p1, f4p2, f4p3)) {
+                                createProgression(s, p, true, true, true, LocalDate.now().minusDays(20));
+                        }
+                }
+
+                createCertificate(stagiaires[0], f4p1, LocalDate.now().minusDays(19));
+                createCertificate(stagiaires[0], f4p2, LocalDate.now().minusDays(18));
+                createCertificate(stagiaires[0], f4p3, LocalDate.now().minusDays(17));
+                createCertificate(stagiaires[2], f4p1, LocalDate.now().minusDays(19));
+                createCertificate(stagiaires[2], f4p2, LocalDate.now().minusDays(18));
+                createCertificate(stagiaires[2], f4p3, LocalDate.now().minusDays(17));
+                createCertificate(stagiaires[4], f4p1, LocalDate.now().minusDays(19));
+                createCertificate(stagiaires[4], f4p2, LocalDate.now().minusDays(18));
+                createCertificate(stagiaires[4], f4p3, LocalDate.now().minusDays(17));
+
+                createNotification(formateur1, "Nouvelle Inscription",
+                                "Mohamed Trabelsi vient de rejoindre votre formation Full Stack.");
+                createNotification(formateur1, "Seance Aujourd'hui",
+                                "Rappel : vous avez une seance Angular ce matin a 10h00 en Salle Beta.");
+                createNotification(formateur2, "Evaluation requise",
+                                "Les stagiaires de la phase Python attendent leur evaluation.");
+                createNotification(stagiaires[0], "Inscription confirmee",
+                                "Votre inscription a la formation Full Stack est confirmee. Bienvenue !");
+                createNotification(stagiaires[0], "Certification obtenue !",
+                                "Felicitations ! Certificat blockchain emis pour la phase 'Fondamentaux de la Cybersecurite'. Note : 18.5/20");
+                createNotification(stagiaires[0], "Certification obtenue !",
+                                "Felicitations ! Certificat blockchain emis pour la phase 'Pentesting & Ethical Hacking'. Note : 17.0/20");
+                createNotification(stagiaires[0], "Certification obtenue !",
+                                "Felicitations ! Certificat blockchain emis pour la phase 'Securisation des Infrastructures'. Note : 16.5/20");
+                createNotification(stagiaires[1], "Nouvelle phase debloquee",
+                                "La phase Angular & Architecture Frontend est maintenant accessible.");
+                createNotification(stagiaires[4], "Evaluation publiee",
+                                "Dr. Amine Hadj a publie votre evaluation. Note : 18/20 - Excellent !");
+
+                System.out.println("=== Bridge DataSeeder: Donnees initialisees avec succes ===");
         }
 
-        createEvaluation(formateur1, stagiaires[0], f1p1, 17.5, "Excellent travail. Maitrise parfaite des fondamentaux Spring Boot.", "Spring Boot, JPA, Spring Security, JWT, REST API");
-        createEvaluation(formateur1, stagiaires[1], f1p1, 15.0, "Tres bon niveau. Quelques erreurs de gestion d'exceptions.", "Spring Boot, JPA, REST API, Maven");
-        createEvaluation(formateur1, stagiaires[2], f1p1, 14.0, "Bon travail. L'architecture REST est correcte.", "Spring Boot, JPA, REST API");
-        createEvaluation(formateur1, stagiaires[3], f1p1, 12.5, "Niveau satisfaisant. Doit approfondir JPA.", "Spring Boot, JPA");
-        createEvaluation(formateur1, stagiaires[4], f1p1, 18.0, "Performance remarquable. Code propre, architecture exemplaire.", "Spring Boot, JPA, Spring Security, JWT, Docker");
-
-        createEvaluation(formateur2, stagiaires[5], f2p1, 16.0, "Excellente Maitrise de Pandas et NumPy.", "Python, Pandas, NumPy, Matplotlib, Seaborn");
-        createEvaluation(formateur2, stagiaires[6], f2p1, 13.0, "Bon niveau general.", "Python, Pandas, NumPy");
-        createEvaluation(formateur2, stagiaires[7], f2p1, 15.5, "Tres bon travail.", "Python, Pandas, NumPy, Matplotlib");
-
-        createEvaluation(formateur1, stagiaires[0], f4p1, 18.5, "Maitrise exceptionnelle des fondamentaux de la Cybersecurite. Analyse de menaces remarquable.", "Cryptographie, Protocoles TLS/SSL, Modeles de menaces, Securite reseau");
-        createEvaluation(formateur1, stagiaires[0], f4p2, 17.0, "Excellent travail en pentesting. Exploitation OWASP Top 10 maitrisee.", "Kali Linux, Metasploit, BurpSuite, OWASP, Nmap");
-        createEvaluation(formateur1, stagiaires[0], f4p3, 16.5, "Tres bonne securisation des infrastructures. Architecture Zero Trust bien comprise.", "Firewall, SIEM, IDS/IPS, Zero Trust, Audit");
-        createEvaluation(formateur1, stagiaires[2], f4p1, 15.5, "Bonne comprehension des concepts de Cybersecurite.", "Cryptographie, Protocoles TLS/SSL, Securite reseau");
-        createEvaluation(formateur1, stagiaires[2], f4p2, 14.5, "Bon niveau en pentesting.", "Kali Linux, Metasploit, BurpSuite");
-        createEvaluation(formateur1, stagiaires[2], f4p3, 14.0, "Infrastructure bien securisee.", "Firewall, SIEM, IDS/IPS");
-        createEvaluation(formateur1, stagiaires[4], f4p1, 16.0, "Tres bonne Maitrise.", "Cryptographie, Protocoles TLS/SSL");
-        createEvaluation(formateur1, stagiaires[4], f4p2, 15.0, "Bon travail en ethical hacking.", "Kali Linux, Metasploit");
-        createEvaluation(formateur1, stagiaires[4], f4p3, 14.5, "Bonne securisation.", "Firewall, SIEM");
-
-        for (User s : List.of(stagiaires[0], stagiaires[2], stagiaires[4])) {
-            for (Phase p : List.of(f4p1, f4p2, f4p3)) {
-                createProgression(s, p, true, true, true, LocalDate.now().minusDays(20));
-            }
+        private User createUser(String firstName, String lastName, String email,
+                        String password, Role role, Status status, int age, String avatar) {
+                User user = new User();
+                user.setFirstName(firstName);
+                user.setLastName(lastName);
+                user.setEmail(email);
+                user.setPassword(passwordEncoder.encode(password));
+                user.setRole(role);
+                user.setStatus(status);
+                user.setAge(age);
+                user.setAvatar(avatar);
+                user.setEmailVerified(true);
+                user.setAuthProvider("LOCAL");
+                user.setCreatedAt(LocalDate.now().minusDays((long) (Math.random() * 90)));
+                return userRepository.save(user);
         }
 
-        createCertificate(stagiaires[0], f4p1, LocalDate.now().minusDays(19));
-        createCertificate(stagiaires[0], f4p2, LocalDate.now().minusDays(18));
-        createCertificate(stagiaires[0], f4p3, LocalDate.now().minusDays(17));
-        createCertificate(stagiaires[2], f4p1, LocalDate.now().minusDays(19));
-        createCertificate(stagiaires[2], f4p2, LocalDate.now().minusDays(18));
-        createCertificate(stagiaires[2], f4p3, LocalDate.now().minusDays(17));
-        createCertificate(stagiaires[4], f4p1, LocalDate.now().minusDays(19));
-        createCertificate(stagiaires[4], f4p2, LocalDate.now().minusDays(18));
-        createCertificate(stagiaires[4], f4p3, LocalDate.now().minusDays(17));
-
-        createNotification(formateur1, "Nouvelle Inscription", "Mohamed Trabelsi vient de rejoindre votre formation Full Stack.");
-        createNotification(formateur1, "Seance Aujourd'hui", "Rappel : vous avez une seance Angular ce matin a 10h00 en Salle Beta.");
-        createNotification(formateur2, "Evaluation requise", "Les stagiaires de la phase Python attendent leur evaluation.");
-        createNotification(stagiaires[0], "Inscription confirmee", "Votre inscription a la formation Full Stack est confirmee. Bienvenue !");
-        createNotification(stagiaires[0], "Certification obtenue !", "Felicitations ! Certificat blockchain emis pour la phase 'Fondamentaux de la Cybersecurite'. Note : 18.5/20");
-        createNotification(stagiaires[0], "Certification obtenue !", "Felicitations ! Certificat blockchain emis pour la phase 'Pentesting & Ethical Hacking'. Note : 17.0/20");
-        createNotification(stagiaires[0], "Certification obtenue !", "Felicitations ! Certificat blockchain emis pour la phase 'Securisation des Infrastructures'. Note : 16.5/20");
-        createNotification(stagiaires[1], "Nouvelle phase debloquee", "La phase Angular & Architecture Frontend est maintenant accessible.");
-        createNotification(stagiaires[4], "Evaluation publiee", "Dr. Amine Hadj a publie votre evaluation. Note : 18/20 - Excellent !");
-
-        System.out.println("=== Bridge DataSeeder: Donnees initialisees avec succes ===");
-    }
-
-    private User createUser(String firstName, String lastName, String email,
-                             String password, Role role, Status status, int age, String avatar) {
-        User user = new User();
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setRole(role);
-        user.setStatus(status);
-        user.setAge(age);
-        user.setAvatar(avatar);
-        user.setEmailVerified(true);
-        user.setAuthProvider("LOCAL");
-        user.setCreatedAt(LocalDate.now().minusDays((long)(Math.random() * 90)));
-        return userRepository.save(user);
-    }
-
-    private Formation createFormation(String title, String description, String category,
-                                       Double totalPrice, List<User> trainers) {
-        Formation f = new Formation();
-        f.setTitle(title);
-        f.setDescription(description);
-        f.setCategory(category);
-        f.setTotalPrice(totalPrice);
-        f.setTrainers(trainers);
-        return formationRepository.save(f);
-    }
-
-    private Phase createPhase(Formation formation, int order, String title,
-                               String content, Double price) {
-        Phase p = new Phase();
-        p.setFormation(formation);
-        p.setPhaseOrder(order);
-        p.setTitle(title);
-        p.setContent(content);
-        p.setPrice(price);
-        p.setMinimumAttendance(75.0);
-        p.setMinimumGrade(12.0);
-        return phaseRepository.save(p);
-    }
-
-    private Session createSession(Phase phase, LocalDate date, String startTime,
-                                   int duration, String location, String meetingLink) {
-        Session s = new Session();
-        s.setPhase(phase);
-        s.setSessionDate(date);
-        s.setStartTime(LocalTime.parse(startTime));
-        s.setDuration(duration);
-        s.setLocation(location);
-        s.setMeetingLink(meetingLink);
-        return sessionRepository.save(s);
-    }
-
-    private void enrollStudent(User student, Formation formation, List<Phase> phases,
-                                PaymentStatus... paymentStatuses) {
-        if (enrollmentRepository.existsByStudentIdAndFormationId(student.getId(), formation.getId())) {
-            return;
+        private Formation createFormation(String title, String description, String category,
+                        Double totalPrice, List<User> trainers) {
+                Formation f = new Formation();
+                f.setTitle(title);
+                f.setDescription(description);
+                f.setCategory(category);
+                f.setTotalPrice(totalPrice);
+                f.setTrainers(trainers);
+                return formationRepository.save(f);
         }
-        Enrollment enrollment = new Enrollment();
-        enrollment.setStudent(student);
-        enrollment.setFormation(formation);
-        enrollment.setEnrollmentDate(LocalDate.now().minusDays((long)(Math.random() * 60 + 5)));
-        enrollmentRepository.save(enrollment);
 
-        for (int i = 0; i < phases.size(); i++) {
-            Phase phase = phases.get(i);
-            Payment payment = new Payment();
-            payment.setEnrollment(enrollment);
-            payment.setPhase(phase);
-            payment.setAmount(phase.getPrice() != null ? phase.getPrice() : 0.0);
-            payment.setStatus(i < paymentStatuses.length ? paymentStatuses[i] : PaymentStatus.PENDING);
-            payment.setDueDate(LocalDate.now().plusDays((long)(i * 30 + 5)));
-            if (payment.getStatus() == PaymentStatus.COMPLETED) {
-                payment.setPaymentDate(LocalDate.now().minusDays((long)(Math.random() * 20 + 1)));
-                payment.setPaymentMethod("VIREMENT");
-                payment.setTransactionReference("TXN-" + System.currentTimeMillis() + "-" + i);
-            }
-            paymentRepository.save(payment);
+        private Phase createPhase(Formation formation, int order, String title,
+                        String content, Double price) {
+                Phase p = new Phase();
+                p.setFormation(formation);
+                p.setPhaseOrder(order);
+                p.setTitle(title);
+                p.setContent(content);
+                p.setPrice(price);
+                p.setMinimumAttendance(75.0);
+                p.setMinimumGrade(12.0);
+                return phaseRepository.save(p);
         }
-    }
 
-    private void createEvaluation(User trainer, User student, Phase phase,
-                                   double grade, String comment, String skills) {
-        if (evaluationRepository.findByStudentIdAndPhaseId(student.getId(), phase.getId()).isPresent()) {
-            return;
+        private Session createSession(Phase phase, LocalDate date, String startTime,
+                        int duration, String location, String meetingLink) {
+                Session s = new Session();
+                s.setPhase(phase);
+                s.setSessionDate(date);
+                s.setStartTime(LocalTime.parse(startTime));
+                s.setDuration(duration);
+                s.setLocation(location);
+                s.setMeetingLink(meetingLink);
+                return sessionRepository.save(s);
         }
-        Evaluation eval = new Evaluation();
-        eval.setTrainer(trainer);
-        eval.setStudent(student);
-        eval.setPhase(phase);
-        eval.setGrade(grade);
-        eval.setComment(comment);
-        eval.setSkills(skills);
-        eval.setEvaluationDate(LocalDate.now().minusDays((long)(Math.random() * 7 + 1)));
-        evaluationRepository.save(eval);
-    }
 
-    private void createNotification(User user, String title, String message) {
-        Notification n = new Notification();
-        n.setUser(user);
-        n.setTitle(title);
-        n.setMessage(message);
-        n.setCreatedAt(java.time.LocalDateTime.now().minusHours((long)(Math.random() * 48)));
-        n.setReadStatus(false);
-        notificationRepository.save(n);
-    }
+        private void enrollStudent(User student, Formation formation, List<Phase> phases,
+                        PaymentStatus... paymentStatuses) {
+                if (enrollmentRepository.existsByStudentIdAndFormationId(student.getId(), formation.getId())) {
+                        return;
+                }
+                Enrollment enrollment = new Enrollment();
+                enrollment.setStudent(student);
+                enrollment.setFormation(formation);
+                enrollment.setEnrollmentDate(LocalDate.now().minusDays((long) (Math.random() * 60 + 5)));
+                enrollmentRepository.save(enrollment);
 
-    private void createAttendance(User student, Session session, boolean present, int starRating, String note) {
-        Attendance a = new Attendance();
-        a.setStudent(student);
-        a.setSession(session);
-        a.setPresent(present);
-        a.setStarRating(starRating);
-        a.setSessionNote(note);
-        attendanceRepository.save(a);
-    }
-
-    private void createProgression(User student, Phase phase, boolean paymentValidated,
-                                    boolean pedagogicalValidated, boolean unlocked, LocalDate validationDate) {
-        Progression prog = new Progression();
-        prog.setStudent(student);
-        prog.setPhase(phase);
-        prog.setPaymentValidated(paymentValidated);
-        prog.setPedagogicalValidated(pedagogicalValidated);
-        prog.setUnlocked(unlocked);
-        prog.setValidationDate(validationDate);
-        progressionRepository.save(prog);
-    }
-
-    private void createCertificate(User student, Phase phase, LocalDate issueDate) {
-        if (certificateRepository.findByStudentId(student.getId()).stream()
-                .anyMatch(c -> c.getPhase() != null && c.getPhase().getId().equals(phase.getId()))) {
-            return;
+                for (int i = 0; i < phases.size(); i++) {
+                        Phase phase = phases.get(i);
+                        Payment payment = new Payment();
+                        payment.setEnrollment(enrollment);
+                        payment.setPhase(phase);
+                        payment.setAmount(phase.getPrice() != null ? phase.getPrice() : 0.0);
+                        payment.setStatus(i < paymentStatuses.length ? paymentStatuses[i] : PaymentStatus.PENDING);
+                        payment.setDueDate(LocalDate.now().plusDays((long) (i * 30 + 5)));
+                        if (payment.getStatus() == PaymentStatus.COMPLETED) {
+                                payment.setPaymentDate(LocalDate.now().minusDays((long) (Math.random() * 20 + 1)));
+                                payment.setPaymentMethod("VIREMENT");
+                                payment.setTransactionReference("TXN-" + System.currentTimeMillis() + "-" + i);
+                        }
+                        paymentRepository.save(payment);
+                }
         }
-        try {
-            String certNum = "CERT-" + String.format("%04d", (int)(Math.random() * 9000 + 1000))
-                    + "-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-            String certHash = generateSha256("BRIDGE_CHAIN_v1|STUDENT:" + student.getId() + ":" + student.getEmail() + "|PHASE:" + phase.getId() + ":" + phase.getTitle());
-            String blockchainTx = "0x" + generateSha256("TX_PROOF:" + certHash + ":" + certNum);
 
-            Certificate cert = new Certificate();
-            cert.setCertificateNumber(certNum);
-            cert.setPdfUrl("/api/certificates/download/" + certNum);
-            cert.setHashValue(certHash);
-            cert.setBlockchainTransactionHash(blockchainTx);
-            cert.setIssueDate(issueDate);
-            cert.setStudent(student);
-            cert.setPhase(phase);
-            certificateRepository.save(cert);
-        } catch (Exception e) {
-            System.err.println("[DataSeeder] Certificate seed failed: " + e.getMessage());
+        private void createEvaluation(User trainer, User student, Phase phase,
+                        double grade, String comment, String skills) {
+                if (evaluationRepository.findByStudentIdAndPhaseId(student.getId(), phase.getId()).isPresent()) {
+                        return;
+                }
+                Evaluation eval = new Evaluation();
+                eval.setTrainer(trainer);
+                eval.setStudent(student);
+                eval.setPhase(phase);
+                eval.setGrade(grade);
+                eval.setComment(comment);
+                eval.setSkills(skills);
+                eval.setEvaluationDate(LocalDate.now().minusDays((long) (Math.random() * 7 + 1)));
+                evaluationRepository.save(eval);
         }
-    }
 
-    private String generateSha256(String input) {
-        try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder();
-            for (byte b : hash) { String h = Integer.toHexString(0xff & b); if (h.length() == 1) hex.append('0'); hex.append(h); }
-            return hex.toString();
-        } catch (Exception e) { throw new RuntimeException(e); }
-    }
+        private void createNotification(User user, String title, String message) {
+                Notification n = new Notification();
+                n.setUser(user);
+                n.setTitle(title);
+                n.setMessage(message);
+                n.setCreatedAt(java.time.LocalDateTime.now().minusHours((long) (Math.random() * 48)));
+                n.setReadStatus(false);
+                notificationRepository.save(n);
+        }
+
+        private void createAttendance(User student, Session session, boolean present, int starRating, String note) {
+                Attendance a = new Attendance();
+                a.setStudent(student);
+                a.setSession(session);
+                a.setPresent(present);
+                a.setStarRating(starRating);
+                a.setSessionNote(note);
+                attendanceRepository.save(a);
+        }
+
+        private void createProgression(User student, Phase phase, boolean paymentValidated,
+                        boolean pedagogicalValidated, boolean unlocked, LocalDate validationDate) {
+                Progression prog = new Progression();
+                prog.setStudent(student);
+                prog.setPhase(phase);
+                prog.setPaymentValidated(paymentValidated);
+                prog.setPedagogicalValidated(pedagogicalValidated);
+                prog.setUnlocked(unlocked);
+                prog.setValidationDate(validationDate);
+                progressionRepository.save(prog);
+        }
+
+        private void createCertificate(User student, Phase phase, LocalDate issueDate) {
+                if (certificateRepository.findByStudentId(student.getId()).stream()
+                                .anyMatch(c -> c.getPhase() != null && c.getPhase().getId().equals(phase.getId()))) {
+                        return;
+                }
+                try {
+                        String certNum = "CERT-" + String.format("%04d", (int) (Math.random() * 9000 + 1000))
+                                        + "-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+                        String certHash = generateSha256("BRIDGE_CHAIN_v1|STUDENT:" + student.getId() + ":"
+                                        + student.getEmail() + "|PHASE:" + phase.getId() + ":" + phase.getTitle());
+                        String blockchainTx = "0x" + generateSha256("TX_PROOF:" + certHash + ":" + certNum);
+
+                        Certificate cert = new Certificate();
+                        cert.setCertificateNumber(certNum);
+                        cert.setPdfUrl("/api/certificates/download/" + certNum);
+                        cert.setHashValue(certHash);
+                        cert.setBlockchainTransactionHash(blockchainTx);
+                        cert.setIssueDate(issueDate);
+                        cert.setStudent(student);
+                        cert.setPhase(phase);
+                        certificateRepository.save(cert);
+                } catch (Exception e) {
+                        System.err.println("[DataSeeder] Certificate seed failed: " + e.getMessage());
+                }
+        }
+
+        private String generateSha256(String input) {
+                try {
+                        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+                        byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        StringBuilder hex = new StringBuilder();
+                        for (byte b : hash) {
+                                String h = Integer.toHexString(0xff & b);
+                                if (h.length() == 1)
+                                        hex.append('0');
+                                hex.append(h);
+                        }
+                        return hex.toString();
+                } catch (Exception e) {
+                        throw new RuntimeException(e);
+                }
+        }
 }
