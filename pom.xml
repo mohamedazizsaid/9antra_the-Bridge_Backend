@@ -146,6 +146,23 @@
 			<artifactId>bucket4j-redis</artifactId>
 			<version>8.10.1</version>
 		</dependency>
+
+		<!-- ─── Spring Boot Actuator + Prometheus Metrics ─── -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+
+		<!-- ─── H2 in-memory DB for unit/CI tests ─── -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 
@@ -199,7 +216,67 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- ─── JaCoCo: Code Coverage for SonarQube ─── -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals><goal>prepare-agent</goal></goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals><goal>report</goal></goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ─── Maven Surefire: JUnit 5 test runner ─── -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+					</includes>
+					<!-- Pass active profiles to forked JVM -->
+					<argLine>@{argLine}</argLine>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
-</project>
+	<!-- ─── Profiles ───────────────────────────────────────────────────────── -->
+	<profiles>
+		<!-- Run OWASP dependency check: mvn verify -P security -->
+		<profile>
+			<id>security</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.owasp</groupId>
+						<artifactId>dependency-check-maven</artifactId>
+						<version>10.0.4</version>
+						<configuration>
+							<failBuildOnCVSS>7</failBuildOnCVSS>
+							<suppressionFile>owasp-suppressions.xml</suppressionFile>
+							<formats>
+								<format>HTML</format>
+								<format>JSON</format>
+							</formats>
+						</configuration>
+						<executions>
+							<execution>
+								<goals><goal>check</goal></goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>

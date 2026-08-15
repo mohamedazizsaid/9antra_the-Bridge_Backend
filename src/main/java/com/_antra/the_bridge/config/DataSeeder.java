@@ -7,6 +7,7 @@ import com._antra.the_bridge.enumType.Status;
 import com._antra.the_bridge.entity.Certificate;
 import com._antra.the_bridge.repository.*;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Component
+@Profile("!test")
 public class DataSeeder implements CommandLineRunner {
 
         private final UserRepository userRepository;
