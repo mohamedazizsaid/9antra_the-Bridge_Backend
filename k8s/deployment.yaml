@@ -1,0 +1,192 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: the-bridge
+  namespace: the-bridge
+  labels:
+    app.kubernetes.io/name: the-bridge
+    app.kubernetes.io/component: api
+    app.kubernetes.io/version: "latest"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: the-bridge
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: the-bridge
+        app.kubernetes.io/name: the-bridge
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      # Non-root security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+
+      containers:
+        - name: the-bridge
+          # Replace <GITHUB_OWNER> with your GitHub username/org
+          image: ghcr.io/<GITHUB_OWNER>/the-bridge:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 8081
+              protocol: TCP
+
+          # ── Resource limits ────────────────────────────────────────────────
+          # Adjust based on your Minikube node capacity and production sizing.
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+
+          # ── Health Probes ──────────────────────────────────────────────────
+          # startupProbe: gives the app time to start before liveness kicks in
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12  # allows up to 120s startup time
+            timeoutSeconds: 5
+
+          # livenessProbe: restart container if it's hung/deadlocked
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 0
+            periodSeconds: 20
+            failureThreshold: 3
+            timeoutSeconds: 5
+
+          # readinessProbe: only route traffic when DB + Redis are available
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+
+          # ── Environment Variables ──────────────────────────────────────────
+          # Non-sensitive values come from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: the-bridge-config
+
+          # Sensitive values come from Secret (never hardcoded)
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: DATABASE_URL
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: DATABASE_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: JWT_SECRET
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: MAIL_PASSWORD
+            - name: CLOUDINARY_CLOUD_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: CLOUDINARY_CLOUD_NAME
+            - name: CLOUDINARY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: CLOUDINARY_API_KEY
+            - name: CLOUDINARY_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: CLOUDINARY_API_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: GOOGLE_CLIENT_SECRET
+            - name: FACEBOOK_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: FACEBOOK_CLIENT_ID
+            - name: FACEBOOK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: FACEBOOK_CLIENT_SECRET
+            - name: STRIPE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: STRIPE_SECRET_KEY
+            - name: STRIPE_PUBLISHABLE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: STRIPE_PUBLISHABLE_KEY
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: STRIPE_WEBHOOK_SECRET
+            - name: BLOCKCHAIN_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: BLOCKCHAIN_PRIVATE_KEY
+            - name: SPRING_DATA_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: the-bridge-secrets
+                  key: SPRING_DATA_REDIS_PASSWORD
+
+          # Container-level security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Spring Boot writes temp files
+            capabilities:
+              drop:
+                - ALL

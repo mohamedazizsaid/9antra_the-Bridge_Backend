@@ -1,0 +1,57 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# docker-compose.monitoring.yml
+# Monitoring local avec Prometheus + Grafana
+# Usage:
+#   docker compose -f docker-compose.monitoring.yml up -d
+#   Grafana  → http://localhost:3000   (admin / admin)
+#   Prometheus → http://localhost:9090
+# ──────────────────────────────────────────────────────────────────────────────
+
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: the-bridge-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: the-bridge-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge
+    # Pour connecter l'app Spring Boot au monitoring réseau,
+    # démarrer l'app avec --network monitoring ou dans un compose séparé.

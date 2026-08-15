@@ -32,7 +32,19 @@ build/
 ### VS Code ###
 .vscode/
 
-# Environment files
+# Environment files — NEVER commit .env with real values
 .env
 .env.*
 !.env.example
+
+# Kubernetes real secrets (only the example template is committed)
+k8s/secret.yaml
+k8s/secrets.yaml
+
+# OWASP Dependency Check reports
+dependency-check-report.*
+owasp-suppressions.xml
+
+# Docker local volumes
+docker/grafana/data/
+docker/prometheus/data/
