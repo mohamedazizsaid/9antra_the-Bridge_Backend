@@ -101,7 +101,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public ProxyManager<String> proxyManager(StatefulRedisConnection<String, byte[]> lettuceConnection) {
+    public ProxyManager<String> proxyManager(@org.springframework.beans.factory.annotation.Autowired(required = false) StatefulRedisConnection<String, byte[]> lettuceConnection) {
         if (lettuceConnection == null) {
             log.warn("ProxyManager initialized without active Redis connection. Local fallback will be active.");
             return null;
