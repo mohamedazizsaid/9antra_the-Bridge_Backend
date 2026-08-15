@@ -48,3 +48,5 @@ owasp-suppressions.xml
 # Docker local volumes
 docker/grafana/data/
 docker/prometheus/data/
+
+.env.example
