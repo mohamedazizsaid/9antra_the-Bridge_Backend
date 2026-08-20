@@ -37,7 +37,7 @@ spec:
       containers:
         - name: the-bridge
           # Replace <GITHUB_OWNER> with your GitHub username/org
-          image: ghcr.io/<GITHUB_OWNER>/the-bridge:latest
+          image: ghcr.io/mohamedazizsaid/the-bridge:latest
           imagePullPolicy: Always
 
           ports:

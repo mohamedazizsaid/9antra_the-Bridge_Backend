@@ -49,4 +49,7 @@ owasp-suppressions.xml
 docker/grafana/data/
 docker/prometheus/data/
 
+.env.production
 .env.example
+env.txt
+
