@@ -1,15 +1,28 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# docker-compose.monitoring.yml
-# Monitoring local avec Prometheus + Grafana
+# docker-compose.yml — Full Local Stack (Backend + Prometheus + Grafana)
 # Usage:
-#   docker compose -f docker-compose.monitoring.yml up -d
-#   Grafana  → http://localhost:3000   (admin / admin)
-#   Prometheus → http://localhost:9090
+#   docker compose up -d --build
 # ──────────────────────────────────────────────────────────────────────────────
 
 version: '3.8'
 
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: the-bridge-backend
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - monitoring
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.51.2
     container_name: the-bridge-prometheus
@@ -46,22 +59,6 @@ services:
       - prometheus
     restart: unless-stopped
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: the-bridge-backend
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    env_file:
-      - .env
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-    networks:
-      - monitoring
-    restart: unless-stopped
-
 volumes:
   prometheus_data:
   grafana_data:
@@ -69,5 +66,3 @@ volumes:
 networks:
   monitoring:
     driver: bridge
-    # Pour connecter l'app Spring Boot au monitoring réseau,
-    # démarrer l'app avec --network monitoring ou dans un compose séparé.
