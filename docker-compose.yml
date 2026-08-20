@@ -7,6 +7,25 @@
 version: '3.8'
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: the-bridge-mysql
+    ports:
+      - "3308:3306"    # 3308 on host to avoid conflict with your local MySQL
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=the_bridge
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -19,6 +38,15 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      # Connect to the MySQL container in the same Docker network
+      - DATABASE_URL=jdbc:mysql://mysql:3306/the_bridge?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
+      - DATABASE_USERNAME=root
+      - DATABASE_PASSWORD=root
+      # Allow Spring Boot to start even if DB is slow (metrics will be available regardless)
+      - SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT=-1
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - monitoring
     restart: unless-stopped
@@ -62,6 +90,7 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  mysql_data:
 
 networks:
   monitoring:
