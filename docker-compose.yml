@@ -51,6 +51,19 @@ services:
       - monitoring
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ../the_bridge_frontend
+      dockerfile: Dockerfile
+    container_name: the-bridge-frontend
+    ports:
+      - "4200:80"      # Accessible at http://localhost:4200
+    networks:
+      - monitoring
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.51.2
     container_name: the-bridge-prometheus
