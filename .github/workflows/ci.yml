@@ -7,7 +7,7 @@
 #  3. secret-scan         → Gitleaks — detect accidental secret commits (parallel)
 #  4. dependency-scan     → OWASP Dependency Check (parallel)
 #  5. docker-build-push   → Multi-stage build + Trivy scan + push ghcr.io (main only)
-#  6. deploy-render       → Trigger Render deploy via API (main only, after docker)
+#  6. deploy-render       → Trigger Render deploy via Deploy Hook or API (main only)
 # ──────────────────────────────────────────────────────────────────────────────
 
 name: CI/CD — The Bridge
@@ -15,10 +15,13 @@ name: CI/CD — The Bridge
 on:
   push:
     branches:
+      - 'main'
+      - 'master'
       - 'aziz'
   pull_request:
     branches:
-      - main
+      - 'main'
+      - 'master'
 
 # Minimal permissions — principle of least privilege
 permissions:
@@ -70,7 +73,6 @@ jobs:
             --no-transfer-progress \
             -Dspring.profiles.active=test
         env:
-          # Provide fake values required by application context even in test profile
           JWT_SECRET: dGVzdC1zZWNyZXQta2V5LWZvci1jaS1vbmx5LW5ldmVyLXVzZS1pbi1wcm9k
 
       - name: Upload JaCoCo coverage report
@@ -94,6 +96,10 @@ jobs:
     name: SonarQube Analysis
     runs-on: ubuntu-latest
     needs: build-and-test
+    # Expose secrets as env vars so we can use them in `if:` conditions
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
     steps:
       - name: Checkout source
@@ -122,28 +128,34 @@ jobs:
           JWT_SECRET: dGVzdC1zZWNyZXQta2V5LWZvci1jaS1vbmx5LW5ldmVyLXVzZS1pbi1wcm9k
 
       - name: SonarQube Analysis
+        # env.SONAR_TOKEN is populated from the job-level env block above
+        if: env.SONAR_TOKEN != ''
         run: |
           ./mvnw sonar:sonar \
             --batch-mode \
             --no-transfer-progress \
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'the-bridge-api' }} \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL || 'https://sonarcloud.io' }} \
+            -Dsonar.token=${{ env.SONAR_TOKEN }} \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -Dsonar.java.binaries=target/classes \
             -Dsonar.java.test.binaries=target/test-classes \
             -Dsonar.exclusions="**/DataSeeder.java,**/dto/**,**/entity/**,**/enumType/**,**/*Application.java"
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: SonarQube Skip Notice
+        if: env.SONAR_TOKEN == ''
+        run: echo "::warning::SONAR_TOKEN secret is not set. Skipping SonarQube analysis."
+
       - name: SonarQube Quality Gate check
+        if: env.SONAR_TOKEN != ''
         uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
 
   # ── Job 3: Secret Scan (Gitleaks) ─────────────────────────────────────────
   secret-scan:
@@ -189,7 +201,7 @@ jobs:
             -P security \
             -DskipTests \
             -Dnvd.api.key=${{ secrets.NVD_API_KEY }}
-        continue-on-error: true  # Report but don't block on dependency vulnerabilities — review manually
+        continue-on-error: true  # Report but don't block — review manually
 
       - name: Upload OWASP report
         uses: actions/upload-artifact@v4
@@ -199,13 +211,20 @@ jobs:
           retention-days: 30
         if: always()
 
-  # ── Job 5: Docker Build + Scan + Push ────────────────────────────────────
-  # Only runs on pushes to main (not on PRs or feature branches)
+  # ── Job 5: Docker Build + Scan + Push ─────────────────────────────────────
+  # Only runs on push to main / master / aziz
   docker-build-push:
     name: Docker Build, Scan & Push
     runs-on: ubuntu-latest
     needs: [sonarqube, secret-scan, dependency-scan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: |
+      (github.ref == 'refs/heads/main' ||
+       github.ref == 'refs/heads/master' ||
+       github.ref == 'refs/heads/aziz') &&
+      github.event_name == 'push'
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
     outputs:
       image-digest: ${{ steps.push.outputs.digest }}
@@ -225,6 +244,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub (optional)
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
       - name: Extract Docker metadata (tags & labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -235,7 +261,7 @@ jobs:
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build Docker image (no push — for scanning first)
+      - name: Build Docker image (no push — scan first)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -246,7 +272,7 @@ jobs:
           cache-to: type=gha,mode=max
           load: true
 
-      - name: Trivy — Scan Docker image for vulnerabilities
+      - name: Trivy — Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
@@ -256,7 +282,7 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
 
-      - name: Upload Trivy SARIF report to GitHub Security
+      - name: Upload Trivy SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
@@ -285,53 +311,82 @@ jobs:
     name: Deploy to Render (Production)
     runs-on: ubuntu-latest
     needs: docker-build-push
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production  # GitHub Environment protection rules can gate this
+    if: |
+      (github.ref == 'refs/heads/main' ||
+       github.ref == 'refs/heads/master' ||
+       github.ref == 'refs/heads/aziz') &&
+      github.event_name == 'push'
+    environment: production
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
 
     steps:
-      - name: Trigger Render Deploy via API
+      # ── Option A: Deploy Hook (preferred — simpler, no polling needed) ────
+      - name: Trigger Render via Deploy Hook
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
         run: |
-          HTTP_STATUS=$(curl --silent --output /tmp/render-response.json \
+          echo "▶ Triggering Render deploy via Deploy Hook..."
+          HTTP_STATUS=$(curl --silent --output /tmp/render-hook.txt \
             --write-out "%{http_code}" \
-            --request POST \
-            --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            --header "Content-Type: application/json" \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys")
-
-          cat /tmp/render-response.json
+            -X POST "${{ env.RENDER_DEPLOY_HOOK_URL }}")
+          cat /tmp/render-hook.txt || true
+          echo ""
           echo "HTTP Status: $HTTP_STATUS"
-
-          if [ "$HTTP_STATUS" != "201" ]; then
-            echo "::error::Render deploy trigger failed with HTTP $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "::notice::✅ Render deploy triggered via Deploy Hook!"
+          else
+            echo "::error::Deploy Hook failed — HTTP $HTTP_STATUS"
             exit 1
           fi
 
-          DEPLOY_ID=$(cat /tmp/render-response.json | jq -r '.id')
-          echo "Deploy triggered: $DEPLOY_ID"
+      # ── Option B: Render API (fallback) ──────────────────────────────────
+      - name: Trigger Render via API
+        if: env.RENDER_DEPLOY_HOOK_URL == '' && env.RENDER_API_KEY != '' && env.RENDER_SERVICE_ID != ''
+        run: |
+          HTTP_STATUS=$(curl --silent --output /tmp/render-api.json \
+            --write-out "%{http_code}" \
+            --request POST \
+            --header "Authorization: Bearer ${{ env.RENDER_API_KEY }}" \
+            --header "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ env.RENDER_SERVICE_ID }}/deploys")
+
+          cat /tmp/render-api.json
+          echo "HTTP Status: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" != "201" ]; then
+            echo "::error::Render API deploy failed — HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+          DEPLOY_ID=$(cat /tmp/render-api.json | jq -r '.id')
+          echo "Deploy ID: $DEPLOY_ID"
           echo "DEPLOY_ID=$DEPLOY_ID" >> $GITHUB_ENV
 
-      - name: Wait for Render deploy to complete
+      - name: Wait for Render deploy to go live
+        if: env.RENDER_DEPLOY_HOOK_URL == '' && env.RENDER_API_KEY != '' && env.RENDER_SERVICE_ID != ''
         run: |
-          echo "Waiting for Render deploy $DEPLOY_ID to complete..."
-          MAX_WAIT=600  # 10 minutes
+          MAX_WAIT=600
           ELAPSED=0
           INTERVAL=20
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             RESPONSE=$(curl --silent \
-              --header "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID")
+              --header "Authorization: Bearer ${{ env.RENDER_API_KEY }}" \
+              "https://api.render.com/v1/services/${{ env.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID")
 
             STATUS=$(echo "$RESPONSE" | jq -r '.status')
-            echo "[$ELAPSED s] Deploy status: $STATUS"
+            echo "[$ELAPSED s] status: $STATUS"
 
             if [ "$STATUS" = "live" ]; then
-              echo "::notice::✅ Render deploy completed successfully!"
+              echo "::notice::✅ Render deploy is live!"
               exit 0
             fi
 
-            if [ "$STATUS" = "deactivated" ] || [ "$STATUS" = "build_failed" ] || [ "$STATUS" = "update_failed" ] || [ "$STATUS" = "canceled" ]; then
-              echo "::error::❌ Render deploy failed with status: $STATUS"
+            if [ "$STATUS" = "deactivated" ] || [ "$STATUS" = "build_failed" ] || \
+               [ "$STATUS" = "update_failed" ] || [ "$STATUS" = "canceled" ]; then
+              echo "::error::❌ Render deploy failed: $STATUS"
               exit 1
             fi
 
@@ -339,12 +394,15 @@ jobs:
             ELAPSED=$((ELAPSED + INTERVAL))
           done
 
-          echo "::warning::⏰ Render deploy timeout after ${MAX_WAIT}s — check Render dashboard manually"
+          echo "::warning::⏰ Timeout after ${MAX_WAIT}s — check Render dashboard"
           exit 1
+
+      - name: No Render credentials configured
+        if: env.RENDER_DEPLOY_HOOK_URL == '' && (env.RENDER_API_KEY == '' || env.RENDER_SERVICE_ID == '')
+        run: echo "::warning::No Render credentials found (RENDER_DEPLOY_HOOK_URL or RENDER_API_KEY+RENDER_SERVICE_ID). Skipping deploy."
 
       - name: Deploy summary
         if: always()
         run: |
           echo "### Render Production Deploy 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "**Service ID:** \`${{ secrets.RENDER_SERVICE_ID }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
