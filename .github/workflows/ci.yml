@@ -141,20 +141,17 @@ jobs:
       - name: SonarQube Analysis
         if: env.SONAR_TOKEN != ''
         run: |
-          # Build sonar arguments — only add organization if it is set
-          SONAR_ARGS="--batch-mode --no-transfer-progress"
-          SONAR_ARGS="$SONAR_ARGS -Dsonar.token=${{ env.SONAR_TOKEN }}"
-          SONAR_ARGS="$SONAR_ARGS -Dsonar.host.url=${{ env.SONAR_HOST_URL || 'https://sonarcloud.io' }}"
+          SONAR_ORG="${{ vars.SONAR_ORGANIZATION || github.repository_owner }}"
+          SONAR_URL="${{ env.SONAR_HOST_URL || 'https://sonarcloud.io' }}"
 
-          SONAR_ORG="${{ vars.SONAR_ORGANIZATION }}"
-          if [ -n "$SONAR_ORG" ]; then
-            SONAR_ARGS="$SONAR_ARGS -Dsonar.organization=$SONAR_ORG"
-            echo "ℹ️  Using SonarCloud organization: $SONAR_ORG"
-          else
-            echo "ℹ️  No SONAR_ORGANIZATION variable set — running without organization (SonarQube self-hosted or single org)."
-          fi
+          echo "ℹ️  Running SonarQube/SonarCloud analysis for org: $SONAR_ORG on $SONAR_URL"
 
-          ./mvnw sonar:sonar $SONAR_ARGS
+          ./mvnw sonar:sonar \
+            --batch-mode \
+            --no-transfer-progress \
+            -Dsonar.token=${{ env.SONAR_TOKEN }} \
+            -Dsonar.organization=$SONAR_ORG \
+            -Dsonar.host.url=$SONAR_URL
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
