@@ -134,14 +134,9 @@ jobs:
           ./mvnw sonar:sonar \
             --batch-mode \
             --no-transfer-progress \
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'the-bridge-api' }} \
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL || 'https://sonarcloud.io' }} \
             -Dsonar.token=${{ env.SONAR_TOKEN }} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -Dsonar.java.binaries=target/classes \
-            -Dsonar.java.test.binaries=target/test-classes \
-            -Dsonar.exclusions="**/DataSeeder.java,**/dto/**,**/entity/**,**/enumType/**,**/*Application.java"
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL || 'https://sonarcloud.io' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
