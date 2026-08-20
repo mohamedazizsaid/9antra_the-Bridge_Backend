@@ -8,13 +8,12 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # The Bridge — Spring Boot Actuator Prometheus endpoint
-  # L'app doit être accessible depuis le conteneur Docker.
-  # Si l'app tourne en local (pas dans Docker), utiliser host.docker.internal:8081
   - job_name: 'the-bridge'
     metrics_path: '/actuator/prometheus'
-    scrape_interval: 10s
+    scrape_interval: 5s
     static_configs:
-      - targets: ['host.docker.internal:8081']
+      - targets: ['the-bridge-backend:8081', 'host.docker.internal:8081']
     relabel_configs:
       - target_label: application
         replacement: the-bridge
+
