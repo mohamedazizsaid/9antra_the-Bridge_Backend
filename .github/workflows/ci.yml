@@ -138,7 +138,7 @@ jobs:
           distribution: temurin
           # no cache here — reuse the Maven cache already populated by Java 17 step
 
-      - name: SonarQube Analysis
+      - name: SonarQube Analysis & Quality Gate Check
         if: env.SONAR_TOKEN != ''
         run: |
           SONAR_ORG="${{ vars.SONAR_ORGANIZATION || github.repository_owner }}"
@@ -151,21 +151,14 @@ jobs:
             --no-transfer-progress \
             -Dsonar.token=${{ env.SONAR_TOKEN }} \
             -Dsonar.organization=$SONAR_ORG \
-            -Dsonar.host.url=$SONAR_URL
+            -Dsonar.host.url=$SONAR_URL \
+            -Dsonar.qualitygate.wait=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: SonarQube Skip Notice
         if: env.SONAR_TOKEN == ''
         run: echo "::warning::SONAR_TOKEN secret is not set. Skipping SonarQube analysis."
-
-      - name: SonarQube Quality Gate check
-        if: env.SONAR_TOKEN != ''
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonarcloud.io' }}
 
   # ── Job 3: Secret Scan (Gitleaks) ─────────────────────────────────────────
   secret-scan:
