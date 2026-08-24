@@ -26,6 +26,8 @@ Pour que le pipeline GitHub Actions (`.github/workflows/ci.yml`) s'exécute sans
 | `RENDER_DEPLOY_HOOK_URL` | `https://api.render.com/deploy/srv-xxxx?key=yyyy` | Déclenchement automatique du déploiement sur Render (Recommandé) |
 | `RENDER_API_KEY` | Jeton API Render (`rnd_...`) | Optionnel (si non-utilisation du Deploy Hook) |
 | `RENDER_SERVICE_ID` | ID du service Render (`srv-...`) | Optionnel (si non-utilisation du Deploy Hook) |
+| `GRAFANA_CLOUD_URL` | `https://<votre-org>.grafana.net` | URL de votre instance Grafana Cloud |
+| `GRAFANA_CLOUD_API_KEY` | Jeton API ou Service Account Token Grafana Cloud (rôle Editor) | Envoi d'annotations de déploiement et synchronisation de dashboards |
 | `DOCKERHUB_USERNAME` | Nom d'utilisateur Docker Hub | Optionnel (si push sur Docker Hub) |
 | `DOCKERHUB_TOKEN` | Jeton / Mot de passe Docker Hub | Optionnel (si push sur Docker Hub) |
 | `NVD_API_KEY` | Clé API NIST NVD | Optionnel (Accélère les scans de vulnérabilités OWASP) |
@@ -141,6 +143,24 @@ L'analyse vérifie automatiquement les tests unitaires et la couverture de code 
 
 ---
 
+## 📈 6. Configuration Grafana Cloud (Monitoring & Observabilité)
+
+1. Créez un compte gratuit sur [Grafana Cloud](https://grafana.com/products/cloud/).
+2. Récupérez l'URL de votre instance (ex: `https://votre-compte.grafana.net`).
+3. Créez un **Service Account Token** :
+   - Dans Grafana Cloud : `Administration` ➔ `Users and access` ➔ `Service accounts`.
+   - Cliquez sur **Add service account**, donnez-lui un nom (ex: `github-actions-ci`) et le rôle **Editor**.
+   - Cliquez sur **Add service account token**, copiez la clé générée.
+4. Dans GitHub Secrets :
+   - Ajoutez `GRAFANA_CLOUD_URL` : l'URL de votre instance Grafana Cloud.
+   - Ajoutez `GRAFANA_CLOUD_API_KEY` : la clé du Service Account.
+5. À chaque déploiement réussi sur Render :
+   - Le pipeline teste la santé du Backend en production (`/actuator/health`).
+   - Le pipeline publie automatiquement une **annotation de déploiement** sur vos dashboards Grafana Cloud avec le commit, la branche et le lien de l'action GitHub.
+   - Le pipeline synchronise automatiquement le dashboard Spring Boot (`docker/grafana/provisioning/dashboards/spring-boot-dashboard.json`).
+
+---
+
 ## ⚙️ Résumé du Pipeline GitHub Actions
 
 ```mermaid
@@ -153,6 +173,7 @@ graph TD
     D --> F
     E --> F
     F --> G[Job 6: Trigger Render Production Deployment]
+    G --> H[Job 7: Grafana Cloud Monitoring & Health Check]
 ```
 
 ✅ **Système prêt, modulaire et totalement automatisé !**

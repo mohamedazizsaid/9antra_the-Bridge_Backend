@@ -8,6 +8,7 @@
 #  4. dependency-scan     → OWASP Dependency Check (parallel)
 #  5. docker-build-push   → Multi-stage build + Trivy scan + push ghcr.io (main only)
 #  6. deploy-render       → Trigger Render deploy via Deploy Hook or API (main only)
+#  7. grafana-cloud       → Post-deploy monitoring, health check & Grafana Cloud annotations
 # ──────────────────────────────────────────────────────────────────────────────
 
 name: CI/CD — The Bridge
@@ -413,3 +414,139 @@ jobs:
         run: |
           echo "### Render Production Deploy 🚀" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+  # ── Job 7: Grafana Cloud Monitoring & Observability ──────────────────────
+  grafana-cloud:
+    name: Grafana Cloud Monitoring
+    runs-on: ubuntu-latest
+    needs: deploy-render
+    if: |
+      always() &&
+      (needs.deploy-render.result == 'success' || needs.deploy-render.result == 'skipped') &&
+      (github.ref == 'refs/heads/main' ||
+       github.ref == 'refs/heads/master' ||
+       github.ref == 'refs/heads/aziz') &&
+      github.event_name == 'push'
+    environment: production
+    env:
+      GRAFANA_CLOUD_URL: ${{ secrets.GRAFANA_CLOUD_URL }}
+      GRAFANA_CLOUD_API_KEY: ${{ secrets.GRAFANA_CLOUD_API_KEY }}
+      APP_HEALTH_URL: ${{ vars.PROD_HEALTH_URL || 'https://nineantra-the-bridge-backend.onrender.com/actuator/health' }}
+      APP_METRICS_URL: ${{ vars.PROD_METRICS_URL || 'https://nineantra-the-bridge-backend.onrender.com/actuator/prometheus' }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # 1. Health check verification post-deployment
+      - name: Verify Backend Health (Production)
+        run: |
+          echo "🔍 Checking production backend health at: ${{ env.APP_HEALTH_URL }}"
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+          SUCCESS=false
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl --silent --output /tmp/health_response.json --write-out "%{http_code}" "${{ env.APP_HEALTH_URL }}" || echo "000")
+            echo "Attempt $((RETRY_COUNT+1))/$MAX_RETRIES - HTTP Status: $HTTP_STATUS"
+
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+              echo "✅ Backend is healthy and responding!"
+              cat /tmp/health_response.json || true
+              SUCCESS=true
+              break
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT+1))
+            echo "⏳ Waiting 15s before next health check retry..."
+            sleep 15
+          done
+
+          if [ "$SUCCESS" = false ]; then
+            echo "::warning::Backend health endpoint ${{ env.APP_HEALTH_URL }} did not return 2xx within expected window. It may still be warming up."
+          fi
+
+      # 2. Send Deployment Annotation to Grafana Cloud
+      - name: Send Deployment Annotation to Grafana Cloud
+        if: env.GRAFANA_CLOUD_URL != '' && env.GRAFANA_CLOUD_API_KEY != ''
+        run: |
+          GRAFANA_BASE_URL="${GRAFANA_CLOUD_URL%/}"
+          TIMESTAMP_MS=$(date +%s%3N)
+          COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ' | sed 's/"/\\"/g' | cut -c1-100)
+          AUTHOR="${{ github.actor }}"
+          REF_NAME="${{ github.ref_name }}"
+          SHA="${{ github.sha }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          ANNOTATION_TEXT="🚀 <b>Deploy to Render</b><br/>Branch: <code>$REF_NAME</code><br/>Commit: <a href=\"https://github.com/${{ github.repository }}/commit/$SHA\">${SHA:0:7}</a> ($COMMIT_MSG)<br/>Author: $AUTHOR<br/><a href=\"$RUN_URL\">View GitHub Action Run</a>"
+
+          echo "📡 Sending deployment annotation to Grafana Cloud ($GRAFANA_BASE_URL/api/annotations)..."
+
+          HTTP_CODE=$(curl -s -o /tmp/grafana_annotation_resp.json -w "%{http_code}" \
+            -X POST "$GRAFANA_BASE_URL/api/annotations" \
+            -H "Authorization: Bearer $GRAFANA_CLOUD_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"time\": $TIMESTAMP_MS,
+              \"tags\": [\"deployment\", \"production\", \"render\", \"the-bridge\", \"$REF_NAME\"],
+              \"text\": \"$ANNOTATION_TEXT\"
+            }")
+
+          echo "HTTP Response: $HTTP_CODE"
+          cat /tmp/grafana_annotation_resp.json || true
+          echo ""
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "::notice::✅ Grafana Cloud deployment annotation posted successfully!"
+          else
+            echo "::warning::Failed to post annotation to Grafana Cloud (HTTP $HTTP_CODE). Check your API Key permissions."
+          fi
+
+      # 3. Sync Dashboard to Grafana Cloud (Optional / Automatic)
+      - name: Sync Dashboard to Grafana Cloud
+        if: env.GRAFANA_CLOUD_URL != '' && env.GRAFANA_CLOUD_API_KEY != ''
+        run: |
+          GRAFANA_BASE_URL="${GRAFANA_CLOUD_URL%/}"
+          DASHBOARD_FILE="docker/grafana/provisioning/dashboards/spring-boot-dashboard.json"
+
+          if [ -f "$DASHBOARD_FILE" ]; then
+            echo "📊 Syncing Spring Boot dashboard to Grafana Cloud..."
+            PAYLOAD=$(jq -n --slurpfile dash "$DASHBOARD_FILE" '{"dashboard": $dash[0], "overwrite": true, "message": "Updated via CI/CD"}')
+
+            HTTP_CODE=$(curl -s -o /tmp/grafana_dash_resp.json -w "%{http_code}" \
+              -X POST "$GRAFANA_BASE_URL/api/dashboards/db" \
+              -H "Authorization: Bearer $GRAFANA_CLOUD_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD")
+
+            echo "Dashboard sync HTTP Response: $HTTP_CODE"
+            cat /tmp/grafana_dash_resp.json || true
+            echo ""
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              echo "::notice::✅ Grafana Cloud dashboard synced successfully!"
+            else
+              echo "::warning::Dashboard sync returned HTTP $HTTP_CODE (may require datasource adjustment or dashboard folder creation)."
+            fi
+          fi
+
+      # 4. Notice when Grafana Cloud secrets are not configured
+      - name: Grafana Cloud Skip Notice
+        if: env.GRAFANA_CLOUD_URL == '' || env.GRAFANA_CLOUD_API_KEY == ''
+        run: |
+          echo "::warning::GRAFANA_CLOUD_URL or GRAFANA_CLOUD_API_KEY secret is not configured. Skipping Grafana Cloud annotations & sync."
+
+      # 5. Monitoring Summary Step
+      - name: Monitoring Summary
+        if: always()
+        run: |
+          echo "### Grafana Cloud & Production Monitoring 📈" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health Endpoint:** \`${{ env.APP_HEALTH_URL }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Metrics Endpoint:** \`${{ env.APP_METRICS_URL }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ env.GRAFANA_CLOUD_URL }}" ]; then
+            echo "- **Grafana Cloud Instance:** \`${{ env.GRAFANA_CLOUD_URL }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Deployment Annotations:** Sent to Grafana Cloud timeline ⏱️" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Grafana Cloud:** *Not configured (Add GRAFANA_CLOUD_URL and GRAFANA_CLOUD_API_KEY)*" >> $GITHUB_STEP_SUMMARY
+          fi
+
