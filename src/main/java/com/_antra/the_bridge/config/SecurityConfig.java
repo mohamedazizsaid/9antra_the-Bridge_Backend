@@ -21,6 +21,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+
 @Configuration
 @EnableWebSecurity
 @EnableAsync
@@ -49,6 +54,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                .httpBasic(Customizer.withDefaults())
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
                         .xssProtection(xss -> xss.headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
@@ -65,14 +71,16 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-                                "/actuator/**"
+                                "/actuator/health"
                         ).permitAll()
+                        .requestMatchers("/actuator/prometheus").hasRole("MONITORING")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
+                .authenticationProvider(monitoringAuthenticationProvider(monitoringUser(passwordEncoder())))
                 .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -102,4 +110,28 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+
+    @Bean
+public InMemoryUserDetailsManager monitoringUser(PasswordEncoder passwordEncoder) {
+
+    UserDetails monitoringUser = User.builder()
+            .username("admin")
+            .password(passwordEncoder.encode("admin"))
+            .roles("MONITORING")
+            .build();
+
+    return new InMemoryUserDetailsManager(monitoringUser);
+}
+
+@Bean
+public AuthenticationProvider monitoringAuthenticationProvider(
+        InMemoryUserDetailsManager monitoringUser) {
+
+    DaoAuthenticationProvider provider =
+            new DaoAuthenticationProvider(monitoringUser);
+
+    provider.setPasswordEncoder(passwordEncoder());
+
+    return provider;
+}
 }
