@@ -28,6 +28,8 @@ Pour que le pipeline GitHub Actions (`.github/workflows/ci.yml`) s'exécute sans
 | `RENDER_SERVICE_ID` | ID du service Render (`srv-...`) | Optionnel (si non-utilisation du Deploy Hook) |
 | `GRAFANA_CLOUD_URL` | `https://<votre-org>.grafana.net` | URL de votre instance Grafana Cloud |
 | `GRAFANA_CLOUD_API_KEY` | Jeton API ou Service Account Token Grafana Cloud (rôle Editor) | Envoi d'annotations de déploiement et synchronisation de dashboards |
+| `MONITORING_USERNAME` | `monitoring_admin` (par défaut) | Utilisateur HTTP Basic pour scraper `/actuator/prometheus` (Render env) |
+| `MONITORING_PASSWORD` | Mot de passe sécurisé | Mot de passe HTTP Basic pour scraper `/actuator/prometheus` (Render env) |
 | `DOCKERHUB_USERNAME` | Nom d'utilisateur Docker Hub | Optionnel (si push sur Docker Hub) |
 | `DOCKERHUB_TOKEN` | Jeton / Mot de passe Docker Hub | Optionnel (si push sur Docker Hub) |
 | `NVD_API_KEY` | Clé API NIST NVD | Optionnel (Accélère les scans de vulnérabilités OWASP) |

@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.core.userdetails.User;
@@ -80,7 +81,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
-                .authenticationProvider(monitoringAuthenticationProvider(monitoringUser(passwordEncoder())))
+                .authenticationProvider(monitoringAuthenticationProvider(monitoringUser(null, null, null)))
                 .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -112,26 +113,26 @@ public class SecurityConfig {
     }
 
     @Bean
-public InMemoryUserDetailsManager monitoringUser(PasswordEncoder passwordEncoder) {
+    public InMemoryUserDetailsManager monitoringUser(
+            PasswordEncoder passwordEncoder,
+            @Value("${monitoring.user.username:admin}") String monitoringUsername,
+            @Value("${monitoring.user.password:admin}") String monitoringPassword) {
 
-    UserDetails monitoringUser = User.builder()
-            .username("admin")
-            .password(passwordEncoder.encode("admin"))
-            .roles("MONITORING")
-            .build();
+        UserDetails monitoringUserDetails = User.builder()
+                .username(monitoringUsername)
+                .password(passwordEncoder != null ? passwordEncoder.encode(monitoringPassword) : passwordEncoder().encode(monitoringPassword))
+                .roles("MONITORING")
+                .build();
 
-    return new InMemoryUserDetailsManager(monitoringUser);
-}
+        return new InMemoryUserDetailsManager(monitoringUserDetails);
+    }
 
-@Bean
-public AuthenticationProvider monitoringAuthenticationProvider(
-        InMemoryUserDetailsManager monitoringUser) {
+    @Bean
+    public AuthenticationProvider monitoringAuthenticationProvider(
+            InMemoryUserDetailsManager monitoringUser) {
 
-    DaoAuthenticationProvider provider =
-            new DaoAuthenticationProvider(monitoringUser);
-
-    provider.setPasswordEncoder(passwordEncoder());
-
-    return provider;
-}
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(monitoringUser);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
 }
