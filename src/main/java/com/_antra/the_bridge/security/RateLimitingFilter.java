@@ -123,6 +123,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                path.startsWith("/webjars") ||
                path.startsWith("/ws") ||
                path.equals("/api/health") ||
+               path.startsWith("/actuator") ||
                !path.startsWith("/api/");
     }
 }

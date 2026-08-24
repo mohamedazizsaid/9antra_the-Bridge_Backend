@@ -442,17 +442,28 @@ jobs:
       - name: Verify Backend Health (Production)
         run: |
           echo "🔍 Checking production backend health at: ${{ env.APP_HEALTH_URL }}"
-          MAX_RETRIES=10
+          MAX_RETRIES=12
           RETRY_COUNT=0
           SUCCESS=false
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             HTTP_STATUS=$(curl --silent --output /tmp/health_response.json --write-out "%{http_code}" "${{ env.APP_HEALTH_URL }}" || echo "000")
-            echo "Attempt $((RETRY_COUNT+1))/$MAX_RETRIES - HTTP Status: $HTTP_STATUS"
+            echo "Attempt $((RETRY_COUNT+1))/$MAX_RETRIES - Primary Health (${{ env.APP_HEALTH_URL }}) HTTP Status: $HTTP_STATUS"
 
             if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
               echo "✅ Backend is healthy and responding!"
               cat /tmp/health_response.json || true
+              SUCCESS=true
+              break
+            fi
+
+            # Fallback check on /api/health
+            FALLBACK_URL="https://nineantra-the-bridge-backend.onrender.com/api/health"
+            FB_STATUS=$(curl --silent --output /tmp/fb_response.json --write-out "%{http_code}" "$FALLBACK_URL" || echo "000")
+            echo "  Fallback Health ($FALLBACK_URL) HTTP Status: $FB_STATUS"
+            if [ "$FB_STATUS" -ge 200 ] && [ "$FB_STATUS" -lt 400 ]; then
+              echo "✅ Backend is healthy on fallback endpoint /api/health!"
+              cat /tmp/fb_response.json || true
               SUCCESS=true
               break
             fi
@@ -463,7 +474,7 @@ jobs:
           done
 
           if [ "$SUCCESS" = false ]; then
-            echo "::warning::Backend health endpoint ${{ env.APP_HEALTH_URL }} did not return 2xx within expected window. It may still be warming up."
+            echo "::warning::Backend health endpoint did not return 2xx within expected window. The service may still be warming up on Render."
           fi
 
       # 2. Send Deployment Annotation to Grafana Cloud
@@ -471,26 +482,29 @@ jobs:
         if: env.GRAFANA_CLOUD_URL != '' && env.GRAFANA_CLOUD_API_KEY != ''
         run: |
           GRAFANA_BASE_URL="${GRAFANA_CLOUD_URL%/}"
-          TIMESTAMP_MS=$(date +%s%3N)
-          COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ' | sed 's/"/\\"/g' | cut -c1-100)
+          NOW_SEC=$(date +%s)
+          TIMESTAMP_MS=$(( NOW_SEC * 1000 ))
+          COMMIT_MSG=$(git log -1 --pretty=%B | tr '\n' ' ' | cut -c1-100)
           AUTHOR="${{ github.actor }}"
           REF_NAME="${{ github.ref_name }}"
           SHA="${{ github.sha }}"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          ANNOTATION_TEXT="🚀 <b>Deploy to Render</b><br/>Branch: <code>$REF_NAME</code><br/>Commit: <a href=\"https://github.com/${{ github.repository }}/commit/$SHA\">${SHA:0:7}</a> ($COMMIT_MSG)<br/>Author: $AUTHOR<br/><a href=\"$RUN_URL\">View GitHub Action Run</a>"
+          ANNOTATION_TEXT="🚀 Deploy to Render | Branch: $REF_NAME | Commit: ${SHA:0:7} ($COMMIT_MSG) | Author: $AUTHOR | Run: $RUN_URL"
 
           echo "📡 Sending deployment annotation to Grafana Cloud ($GRAFANA_BASE_URL/api/annotations)..."
+
+          ANNOTATION_PAYLOAD=$(jq -n \
+            --argjson time "$TIMESTAMP_MS" \
+            --arg text "$ANNOTATION_TEXT" \
+            --arg branch "$REF_NAME" \
+            '{time: $time, timeEnd: $time, tags: ["deployment", "production", "render", "the-bridge", $branch], text: $text}')
 
           HTTP_CODE=$(curl -s -o /tmp/grafana_annotation_resp.json -w "%{http_code}" \
             -X POST "$GRAFANA_BASE_URL/api/annotations" \
             -H "Authorization: Bearer $GRAFANA_CLOUD_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"time\": $TIMESTAMP_MS,
-              \"tags\": [\"deployment\", \"production\", \"render\", \"the-bridge\", \"$REF_NAME\"],
-              \"text\": \"$ANNOTATION_TEXT\"
-            }")
+            -d "$ANNOTATION_PAYLOAD")
 
           echo "HTTP Response: $HTTP_CODE"
           cat /tmp/grafana_annotation_resp.json || true
@@ -499,7 +513,7 @@ jobs:
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             echo "::notice::✅ Grafana Cloud deployment annotation posted successfully!"
           else
-            echo "::warning::Failed to post annotation to Grafana Cloud (HTTP $HTTP_CODE). Check your API Key permissions."
+            echo "::warning::Failed to post annotation to Grafana Cloud (HTTP $HTTP_CODE)."
           fi
 
       # 3. Sync Dashboard to Grafana Cloud (Optional / Automatic)
