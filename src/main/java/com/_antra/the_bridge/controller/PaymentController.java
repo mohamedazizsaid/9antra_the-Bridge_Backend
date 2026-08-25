@@ -22,6 +22,12 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
+    @GetMapping
+    @Operation(summary = "Obtenir tous les paiements (Admin)")
+    public ResponseEntity<List<PaymentDTO>> getAllPayments() {
+        return ResponseEntity.ok(paymentService.getAllPayments());
+    }
+
     @GetMapping("/student/{studentId}")
     @Operation(summary = "Paiements d'un stagiaire")
     public ResponseEntity<List<PaymentDTO>> getPaymentsByStudent(@PathVariable int studentId) {

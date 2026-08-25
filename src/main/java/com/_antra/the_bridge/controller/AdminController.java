@@ -1,5 +1,6 @@
 package com._antra.the_bridge.controller;
 
+import com._antra.the_bridge.dto.DTOHelper;
 import com._antra.the_bridge.dto.UserDTO;
 import com._antra.the_bridge.entity.AuditLog;
 import com._antra.the_bridge.entity.Notification;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -77,14 +79,24 @@ public class AdminController {
 
     @PutMapping("/users/{id}/status")
     @Operation(summary = "Modifier le statut d'un utilisateur")
-    public ResponseEntity<Void> updateUserStatus(@PathVariable int id, @RequestBody Map<String, String> body) {
-        userRepository.findById(id).ifPresent(u -> {
-            try {
-                u.setStatus(Status.valueOf(body.get("status")));
-                userRepository.save(u);
-            } catch (Exception ignored) {}
-        });
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> updateUserStatus(@PathVariable int id, @RequestBody Map<String, String> body) {
+        String statusStr = body.get("status");
+        if (statusStr == null || statusStr.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Le statut est requis"));
+        }
+        var optUser = userRepository.findById(id);
+        if (optUser.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            Status newStatus = Status.valueOf(statusStr.trim().toUpperCase());
+            User user = optUser.get();
+            user.setStatus(newStatus);
+            User saved = userRepository.save(user);
+            return ResponseEntity.ok(DTOHelper.toDTO(saved));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Statut invalide: " + statusStr));
+        }
     }
 
     @DeleteMapping("/users/{id}")
@@ -169,6 +181,31 @@ public class AdminController {
         ));
     }
 
+    @DeleteMapping("/logs")
+    @Transactional
+    @Operation(summary = "Purger les logs d'audit (tous ou par quantité)")
+    public ResponseEntity<Map<String, Object>> purgeLogs(@RequestParam(required = false) Integer count) {
+        long totalBefore = auditLogRepository.count();
+        long deletedCount = 0;
+
+        if (count == null || count <= 0 || count >= totalBefore) {
+            auditLogRepository.deleteAll();
+            deletedCount = totalBefore;
+        } else {
+            List<AuditLog> toDelete = auditLogRepository.findAll(
+                    PageRequest.of(0, count, Sort.by("createdAt").ascending())
+            ).getContent();
+            auditLogRepository.deleteAll(toDelete);
+            deletedCount = toDelete.size();
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Logs purgés avec succès",
+                "deleted", deletedCount,
+                "remaining", auditLogRepository.count()
+        ));
+    }
+
     // ─── Statistics ───────────────────────────────────────────────────────────
 
     @GetMapping("/stats/extended")
@@ -198,7 +235,41 @@ public class AdminController {
 
     // ─── Notification Broadcast ───────────────────────────────────────────────
 
+    @GetMapping("/notifications/broadcast")
+    @Operation(summary = "Historique des notifications diffusées")
+    public ResponseEntity<List<Map<String, Object>>> getBroadcastHistory() {
+        List<Notification> all = notificationRepository.findTop50ByOrderByCreatedAtDesc();
+        Map<String, List<Notification>> grouped = all.stream()
+                .collect(Collectors.groupingBy(n -> (n.getTitle() != null ? n.getTitle() : "") + "___" + (n.getMessage() != null ? n.getMessage() : "")));
+
+        List<Map<String, Object>> result = grouped.values().stream().map(list -> {
+            Notification sample = list.get(0);
+            List<String> roles = list.stream()
+                    .map(n -> n.getUser() != null && n.getUser().getRole() != null ? n.getUser().getRole().name() : "")
+                    .filter(r -> !r.isEmpty())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", sample.getId());
+            map.put("title", sample.getTitle());
+            map.put("message", sample.getMessage());
+            map.put("sent", list.size());
+            map.put("roles", roles.isEmpty() ? List.of("UTILISATEUR") : roles);
+            map.put("createdAt", sample.getCreatedAt() != null ? sample.getCreatedAt().toString() : LocalDateTime.now().toString());
+            return map;
+        }).sorted((a, b) -> {
+            String ta = (String) a.get("createdAt");
+            String tb = (String) b.get("createdAt");
+            if (ta == null || tb == null) return 0;
+            return tb.compareTo(ta);
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/notifications/broadcast")
+    @Transactional
     @Operation(summary = "Diffuser une notification à des rôles sélectionnés")
     public ResponseEntity<Map<String, Object>> broadcastNotification(@RequestBody Map<String, Object> body) {
         String title = (String) body.get("title");
@@ -211,24 +282,27 @@ public class AdminController {
         }
 
         List<Role> targetRoles = roles.stream().map(r -> {
-            try { return Role.valueOf(r); } catch (Exception e) { return null; }
+            try { return Role.valueOf(r.toUpperCase().trim()); } catch (Exception e) { return null; }
         }).filter(r -> r != null).collect(Collectors.toList());
 
         List<User> targets = userRepository.findAll().stream()
-                .filter(u -> targetRoles.contains(u.getRole()) && u.getStatus() == Status.ACTIVE)
+                .filter(u -> targetRoles.contains(u.getRole()) && (u.getStatus() == null || u.getStatus() == Status.ACTIVE))
                 .collect(Collectors.toList());
 
+        LocalDateTime now = LocalDateTime.now();
         List<Notification> notifications = targets.stream().map(u -> {
             Notification n = new Notification();
             n.setUser(u);
             n.setTitle(title);
             n.setMessage(message);
             n.setReadStatus(false);
-            n.setCreatedAt(LocalDateTime.now());
+            n.setCreatedAt(now);
             return n;
         }).collect(Collectors.toList());
 
-        notificationRepository.saveAll(notifications);
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
 
         return ResponseEntity.ok(Map.of(
                 "sent", notifications.size(),

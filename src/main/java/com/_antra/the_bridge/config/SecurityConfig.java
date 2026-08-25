@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -22,10 +22,11 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -51,7 +52,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -80,8 +81,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authenticationProvider(authenticationProvider())
-                .authenticationProvider(monitoringAuthenticationProvider(monitoringUser(null, null, null)))
+                .authenticationManager(authenticationManager)
                 .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -108,19 +108,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(
+            AuthenticationProvider authenticationProvider,
+            AuthenticationProvider monitoringAuthenticationProvider) {
+        return new ProviderManager(List.of(authenticationProvider, monitoringAuthenticationProvider));
     }
 
     @Bean
     public InMemoryUserDetailsManager monitoringUser(
-            PasswordEncoder passwordEncoder,
             @Value("${monitoring.user.username:admin}") String monitoringUsername,
             @Value("${monitoring.user.password:admin}") String monitoringPassword) {
 
         UserDetails monitoringUserDetails = User.builder()
                 .username(monitoringUsername)
-                .password(passwordEncoder != null ? passwordEncoder.encode(monitoringPassword) : passwordEncoder().encode(monitoringPassword))
+                .password(passwordEncoder().encode(monitoringPassword))
                 .roles("MONITORING")
                 .build();
 

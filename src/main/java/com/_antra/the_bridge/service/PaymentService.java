@@ -6,6 +6,7 @@ import com._antra.the_bridge.dto.StripeCheckoutResponse;
 import java.util.List;
 
 public interface PaymentService {
+    List<PaymentDTO> getAllPayments();
     List<PaymentDTO> getPaymentsByStudent(int studentId);
     List<PaymentDTO> getPaymentsByFormation(Long formationId);
     PaymentDTO savePayment(PaymentDTO paymentDTO);

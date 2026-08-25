@@ -167,6 +167,14 @@ public class DTOHelper {
                         payment.getEnrollment().getFormation().getTitle() : null)
                 .studentId(payment.getEnrollment() != null && payment.getEnrollment().getStudent() != null ?
                         payment.getEnrollment().getStudent().getId() : 0)
+                .studentFirstName(payment.getEnrollment() != null && payment.getEnrollment().getStudent() != null ?
+                        payment.getEnrollment().getStudent().getFirstName() : null)
+                .studentLastName(payment.getEnrollment() != null && payment.getEnrollment().getStudent() != null ?
+                        payment.getEnrollment().getStudent().getLastName() : null)
+                .studentEmail(payment.getEnrollment() != null && payment.getEnrollment().getStudent() != null ?
+                        payment.getEnrollment().getStudent().getEmail() : null)
+                .studentAvatar(payment.getEnrollment() != null && payment.getEnrollment().getStudent() != null ?
+                        payment.getEnrollment().getStudent().getAvatar() : null)
                 .dueDate(payment.getDueDate())
                 .build();
     }

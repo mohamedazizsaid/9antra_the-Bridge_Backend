@@ -28,5 +28,9 @@ public class PaymentDTO {
     private Long formationId;
     private String formationTitle;
     private Integer studentId;
+    private String studentFirstName;
+    private String studentLastName;
+    private String studentEmail;
+    private String studentAvatar;
     private LocalDate dueDate;
 }

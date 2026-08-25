@@ -16,6 +16,7 @@ import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +54,13 @@ public class PaymentServiceImpl implements PaymentService {
     @PostConstruct
     public void initStripe() {
         Stripe.apiKey = this.stripeApiKey;
+    }
+
+    @Override
+    public List<PaymentDTO> getAllPayments() {
+        return paymentRepository.findAll(Sort.by(Sort.Direction.DESC, "paymentDate")).stream()
+                .map(DTOHelper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
