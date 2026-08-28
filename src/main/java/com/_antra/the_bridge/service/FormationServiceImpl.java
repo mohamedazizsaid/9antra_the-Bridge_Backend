@@ -17,7 +17,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional
 public class FormationServiceImpl implements FormationService {
 
     private final FormationRepository formationRepository;
@@ -154,25 +157,27 @@ public class FormationServiceImpl implements FormationService {
         formation.setTitle(dto.getTitle());
         formation.setDescription(dto.getDescription());
         formation.setCategory(dto.getCategory());
-        formation.setTotalPrice(dto.getTotalPrice());
+        formation.setStatus("PLANIFIEE");
+        formation.setArchived(false);
 
         // Assign trainers if provided
         if (dto.getTrainers() != null) {
             List<User> trainers = new ArrayList<>();
             for (var trainerDTO : dto.getTrainers()) {
-                userRepository.findById(trainerDTO.getId()).ifPresent(trainers::add);
+                if (trainerDTO != null && trainerDTO.getId() != null) {
+                    userRepository.findById(trainerDTO.getId()).ifPresent(trainers::add);
+                }
             }
             formation.setTrainers(trainers);
         }
 
-        Formation saved = formationRepository.save(formation);
-
         // Create phases if provided and compute total price as sum of phase prices
         double calculatedTotal = 0.0;
+        List<Phase> phases = new ArrayList<>();
         if (dto.getPhases() != null && !dto.getPhases().isEmpty()) {
             for (PhaseDTO phaseDTO : dto.getPhases()) {
                 Phase phase = new Phase();
-                phase.setPhaseOrder(phaseDTO.getPhaseOrder());
+                phase.setPhaseOrder(phaseDTO.getPhaseOrder() != null ? phaseDTO.getPhaseOrder() : (phases.size() + 1));
                 phase.setTitle(phaseDTO.getTitle());
                 phase.setContent(phaseDTO.getContent());
                 double pPrice = phaseDTO.getPrice() != null ? phaseDTO.getPrice() : 0.0;
@@ -180,31 +185,35 @@ public class FormationServiceImpl implements FormationService {
                 calculatedTotal += pPrice;
                 phase.setMinimumAttendance(phaseDTO.getMinimumAttendance() != null ? phaseDTO.getMinimumAttendance() : 75.0);
                 phase.setMinimumGrade(phaseDTO.getMinimumGrade() != null ? phaseDTO.getMinimumGrade() : 10.0);
-                phase.setFormation(saved);
-                Phase savedPhase = phaseRepository.save(phase);
+                phase.setFormation(formation);
 
                 // Create sessions per phase
+                List<Session> sessions = new ArrayList<>();
                 if (phaseDTO.getSessions() != null) {
                     for (SessionDTO sessionDTO : phaseDTO.getSessions()) {
-                        Session session = new Session();
-                        session.setSessionDate(sessionDTO.getSessionDate());
-                        session.setStartTime(sessionDTO.getStartTime());
-                        session.setDuration(sessionDTO.getDuration());
-                        session.setLocation(sessionDTO.getLocation());
-                        session.setMeetingLink(sessionDTO.getMeetingLink());
-                        session.setPhase(savedPhase);
-                        sessionRepository.save(session);
+                        if (sessionDTO != null && sessionDTO.getSessionDate() != null) {
+                            Session session = new Session();
+                            session.setSessionDate(sessionDTO.getSessionDate());
+                            session.setStartTime(sessionDTO.getStartTime());
+                            session.setDuration(sessionDTO.getDuration() != null ? sessionDTO.getDuration() : 2);
+                            session.setLocation(sessionDTO.getLocation());
+                            session.setMeetingLink(sessionDTO.getMeetingLink());
+                            session.setPhase(phase);
+                            sessions.add(session);
+                        }
                     }
                 }
+                phase.setSessions(sessions);
+                phases.add(phase);
             }
-            saved.setTotalPrice(calculatedTotal);
-            formationRepository.save(saved);
-        } else if (dto.getTotalPrice() != null) {
-            saved.setTotalPrice(dto.getTotalPrice());
-            formationRepository.save(saved);
+            formation.setPhases(phases);
+            formation.setTotalPrice(calculatedTotal > 0 ? calculatedTotal : (dto.getTotalPrice() != null ? dto.getTotalPrice() : 0.0));
+        } else {
+            formation.setTotalPrice(dto.getTotalPrice() != null ? dto.getTotalPrice() : 0.0);
         }
 
-        return DTOHelper.toDTO(formationRepository.findById(saved.getId()).orElse(saved));
+        Formation saved = formationRepository.save(formation);
+        return DTOHelper.toDTO(saved);
     }
 
     @Override

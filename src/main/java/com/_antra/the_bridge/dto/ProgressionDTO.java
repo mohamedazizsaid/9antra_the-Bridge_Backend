@@ -1,5 +1,6 @@
 package com._antra.the_bridge.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProgressionDTO {
     private Long id;
     private Integer studentId;
@@ -17,8 +19,8 @@ public class ProgressionDTO {
     private String formationTitle;
     private String phaseTitle;
     private Integer phaseOrder;
-    private boolean paymentValidated;
-    private boolean pedagogicalValidated;
-    private boolean unlocked;
+    private Boolean paymentValidated;
+    private Boolean pedagogicalValidated;
+    private Boolean unlocked;
     private LocalDate validationDate;
 }

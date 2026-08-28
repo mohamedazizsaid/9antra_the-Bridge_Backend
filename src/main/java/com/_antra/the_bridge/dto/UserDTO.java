@@ -1,5 +1,6 @@
 package com._antra.the_bridge.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com._antra.the_bridge.enumType.Role;
 import com._antra.the_bridge.enumType.Status;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserDTO {
     private Integer id;
     private String firstName;
