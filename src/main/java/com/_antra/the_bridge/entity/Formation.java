@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,4 +50,15 @@ public class Formation {
 
     @OneToMany(mappedBy = "formation")
     private List<Enrollment> enrollments = new ArrayList<>();
+
+    /**
+     * Durée par défaut calculée automatiquement à partir de startDate / endDate.
+     * Retourne null si l'une des deux dates est absente.
+     */
+    @Transient
+    public Integer getDefaultDurationWeeks() {
+        if (startDate == null || endDate == null) return null;
+        long days = ChronoUnit.DAYS.between(startDate, endDate);
+        return (int) Math.max(1, Math.round(days / 7.0));
+    }
 }

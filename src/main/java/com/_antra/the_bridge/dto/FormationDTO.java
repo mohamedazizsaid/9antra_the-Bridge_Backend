@@ -27,6 +27,8 @@ public class FormationDTO {
     private LocalDate startDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
+    /** Durée par défaut calculée automatiquement (en semaines) */
+    private Integer defaultDurationWeeks;
     private List<PhaseDTO> phases;
     private List<UserDTO> trainers;
     private List<Integer> students; // enrolled student IDs

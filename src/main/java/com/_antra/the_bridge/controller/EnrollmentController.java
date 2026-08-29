@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/enrollments")
@@ -20,13 +21,50 @@ public class EnrollmentController {
         this.enrollmentService = enrollmentService;
     }
 
+    /**
+     * Inscription à une formation.
+     * Corps : { studentId, formationId, customDurationWeeks?, motivationMessage? }
+     *  - Si customDurationWeeks est null/absent → parcours standard (APPROVED immédiat)
+     *  - Si customDurationWeeks est fourni → durée custom (PENDING, notif formateur)
+     */
     @PostMapping
-    @Operation(summary = "Inscrire un stagiaire à une formation")
-    public ResponseEntity<EnrollmentDTO> enrollStudent(@RequestBody EnrollmentDTO enrollmentDTO) {
-        return ResponseEntity.ok(enrollmentService.enrollStudent(
-                enrollmentDTO.getStudentId(),
-                enrollmentDTO.getFormationId()
-        ));
+    @Operation(summary = "Inscrire un stagiaire à une formation (avec ou sans durée personnalisée)")
+    public ResponseEntity<EnrollmentDTO> enrollStudent(@RequestBody Map<String, Object> body) {
+        int studentId = ((Number) body.get("studentId")).intValue();
+        long formationId = ((Number) body.get("formationId")).longValue();
+        Integer customDurationWeeks = body.containsKey("customDurationWeeks") && body.get("customDurationWeeks") != null
+                ? ((Number) body.get("customDurationWeeks")).intValue()
+                : null;
+        String motivationMessage = body.containsKey("motivationMessage")
+                ? (String) body.get("motivationMessage")
+                : null;
+
+        return ResponseEntity.ok(enrollmentService.enrollStudentWithOptions(
+                studentId, formationId, customDurationWeeks, motivationMessage));
+    }
+
+    /**
+     * Réponse du formateur à une demande d'inscription custom.
+     * Corps : { approved: boolean, rejectionReason?: string }
+     */
+    @PutMapping("/{id}/respond")
+    @Operation(summary = "Formateur approuve ou rejette une demande d'inscription")
+    public ResponseEntity<EnrollmentDTO> respondToEnrollment(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        boolean approved = Boolean.TRUE.equals(body.get("approved"));
+        String rejectionReason = (String) body.get("rejectionReason");
+        return ResponseEntity.ok(enrollmentService.respondToEnrollment(id, approved, rejectionReason));
+    }
+
+    @PutMapping("/{id}/custom-plan")
+    @Operation(summary = "Enregistrer le plan personnalisé (phases, séances) et notifier le stagiaire")
+    public ResponseEntity<EnrollmentDTO> saveCustomPlan(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        String customPlan = body.get("customPlan");
+        String note = body.get("note");
+        return ResponseEntity.ok(enrollmentService.saveCustomPlan(id, customPlan, note));
     }
 
     @DeleteMapping("/student/{studentId}/formation/{formationId}")
@@ -48,5 +86,11 @@ public class EnrollmentController {
     @Operation(summary = "Liste des inscriptions pour un stagiaire")
     public ResponseEntity<List<EnrollmentDTO>> getEnrollmentsByStudent(@PathVariable int studentId) {
         return ResponseEntity.ok(enrollmentService.getEnrollmentsByStudent(studentId));
+    }
+
+    @GetMapping("/formateur/{formateurId}/pending")
+    @Operation(summary = "Demandes d'inscription en attente pour un formateur")
+    public ResponseEntity<List<EnrollmentDTO>> getPendingForFormateur(@PathVariable int formateurId) {
+        return ResponseEntity.ok(enrollmentService.getPendingEnrollmentsForFormateur(formateurId));
     }
 }

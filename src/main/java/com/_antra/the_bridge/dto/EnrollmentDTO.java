@@ -14,11 +14,26 @@ import java.time.LocalDate;
 public class EnrollmentDTO {
     private Long id;
     private LocalDate enrollmentDate;
+
+    // Student info
     private Integer studentId;
     private String studentFirstName;
     private String studentLastName;
     private String studentEmail;
     private String studentAvatar;
+
+    // Formation info
     private Long formationId;
     private String formationTitle;
+    private Integer formationDefaultDurationWeeks;
+    private Integer formateurId;
+    private String formateurName;
+
+    // Enrollment options
+    private String status; // APPROVED | PENDING | REJECTED
+    private Integer customDurationWeeks;
+    private String motivationMessage;
+    private String rejectionReason;
+    private LocalDate respondedAt;
+    private String customPlan;
 }

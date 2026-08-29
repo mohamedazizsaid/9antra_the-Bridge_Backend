@@ -45,6 +45,7 @@ public class DTOHelper {
                 .archived(formation.isArchived())
                 .startDate(formation.getStartDate())
                 .endDate(formation.getEndDate())
+                .defaultDurationWeeks(formation.getDefaultDurationWeeks())
                 .phases(formation.getPhases() != null ?
                         formation.getPhases().stream().map(DTOHelper::toDTO).collect(Collectors.toList()) : null)
                 .trainers(formation.getTrainers() != null ?
@@ -134,16 +135,28 @@ public class DTOHelper {
 
     public static EnrollmentDTO toDTO(Enrollment enrollment) {
         if (enrollment == null) return null;
+        Formation formation = enrollment.getFormation();
+        User firstTrainer = (formation != null && formation.getTrainers() != null && !formation.getTrainers().isEmpty())
+                ? formation.getTrainers().get(0) : null;
         return EnrollmentDTO.builder()
                 .id(enrollment.getId())
                 .enrollmentDate(enrollment.getEnrollmentDate())
+                .status(enrollment.getStatus() != null ? enrollment.getStatus().name() : "APPROVED")
+                .customDurationWeeks(enrollment.getCustomDurationWeeks())
+                .motivationMessage(enrollment.getMotivationMessage())
+                .rejectionReason(enrollment.getRejectionReason())
+                .respondedAt(enrollment.getRespondedAt())
                 .studentId(enrollment.getStudent() != null ? enrollment.getStudent().getId() : 0)
                 .studentFirstName(enrollment.getStudent() != null ? enrollment.getStudent().getFirstName() : null)
                 .studentLastName(enrollment.getStudent() != null ? enrollment.getStudent().getLastName() : null)
                 .studentEmail(enrollment.getStudent() != null ? enrollment.getStudent().getEmail() : null)
                 .studentAvatar(enrollment.getStudent() != null ? enrollment.getStudent().getAvatar() : null)
-                .formationId(enrollment.getFormation() != null ? enrollment.getFormation().getId() : null)
-                .formationTitle(enrollment.getFormation() != null ? enrollment.getFormation().getTitle() : null)
+                .formationId(formation != null ? formation.getId() : null)
+                .formationTitle(formation != null ? formation.getTitle() : null)
+                .formationDefaultDurationWeeks(formation != null ? formation.getDefaultDurationWeeks() : null)
+                .formateurId(firstTrainer != null ? firstTrainer.getId() : null)
+                .formateurName(firstTrainer != null ? firstTrainer.getFirstName() + " " + firstTrainer.getLastName() : null)
+                .customPlan(enrollment.getCustomPlan())
                 .build();
     }
 
