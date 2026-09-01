@@ -157,6 +157,7 @@ public class DTOHelper {
                 .formateurId(firstTrainer != null ? firstTrainer.getId() : null)
                 .formateurName(firstTrainer != null ? firstTrainer.getFirstName() + " " + firstTrainer.getLastName() : null)
                 .customPlan(enrollment.getCustomPlan())
+                .comboEnrollmentId(enrollment.getComboEnrollment() != null ? enrollment.getComboEnrollment().getId() : null)
                 .build();
     }
 
@@ -260,6 +261,32 @@ public class DTOHelper {
                 .studentId(progression.getStudent() != null ? progression.getStudent().getId() : 0)
                 .phaseId(progression.getPhase() != null ? progression.getPhase().getId() : null)
                 .phaseTitle(progression.getPhase() != null ? progression.getPhase().getTitle() : null)
+                .build();
+    }
+
+    public static ComboEnrollmentDTO toDTO(com._antra.the_bridge.entity.ComboEnrollment combo) {
+        if (combo == null) return null;
+        User student = combo.getStudent();
+        return ComboEnrollmentDTO.builder()
+                .id(combo.getId())
+                .studentId(student != null ? student.getId() : null)
+                .studentFirstName(student != null ? student.getFirstName() : null)
+                .studentLastName(student != null ? student.getLastName() : null)
+                .studentEmail(student != null ? student.getEmail() : null)
+                .studentAvatar(student != null ? student.getAvatar() : null)
+                .formations(combo.getFormations() != null ?
+                        combo.getFormations().stream().map(DTOHelper::toDTO).collect(java.util.stream.Collectors.toList()) : null)
+                .totalPrice(combo.getTotalPrice())
+                .discountPercent(combo.getDiscountPercent())
+                .finalPrice(combo.getFinalPrice())
+                .status(combo.getStatus())
+                .createdAt(combo.getCreatedAt())
+                .paidAt(combo.getPaidAt())
+                .stripeSessionId(combo.getStripeSessionId())
+                .receiptRef(combo.getReceiptRef())
+                .note(combo.getNote())
+                .enrollments(combo.getEnrollments() != null ?
+                        combo.getEnrollments().stream().map(DTOHelper::toDTO).collect(java.util.stream.Collectors.toList()) : null)
                 .build();
     }
 }

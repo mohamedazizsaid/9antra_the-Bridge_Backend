@@ -21,7 +21,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final EnrollmentRepository enrollmentRepository;
     private final PhaseRepository phaseRepository;
     private final ProgressionService progressionService;
+    private final ComboEnrollmentService comboEnrollmentService;
 
     @Value("${stripe.api-key:sk_test_mock}")
     private String stripeApiKey;
@@ -44,11 +48,13 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentServiceImpl(PaymentRepository paymentRepository,
                               EnrollmentRepository enrollmentRepository,
                               PhaseRepository phaseRepository,
-                              ProgressionService progressionService) {
+                              ProgressionService progressionService,
+                              @org.springframework.context.annotation.Lazy ComboEnrollmentService comboEnrollmentService) {
         this.paymentRepository = paymentRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.phaseRepository = phaseRepository;
         this.progressionService = progressionService;
+        this.comboEnrollmentService = comboEnrollmentService;
     }
 
     @PostConstruct
@@ -65,7 +71,35 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public List<PaymentDTO> getPaymentsByStudent(int studentId) {
-        return paymentRepository.findByStudentId(studentId).stream()
+        List<Payment> payments = paymentRepository.findByStudentId(studentId);
+
+        // Déduplication : si une tranche a un paiement COMPLETED et un paiement PENDING orphelin, nettoyer le doublon
+        java.util.Map<String, Payment> bestByPhase = new java.util.LinkedHashMap<>();
+        List<Payment> toDelete = new ArrayList<>();
+
+        for (Payment p : payments) {
+            String key = (p.getEnrollment() != null ? p.getEnrollment().getId() : 0) + "_" +
+                         (p.getPhase() != null ? p.getPhase().getId() : 0);
+            if (!bestByPhase.containsKey(key)) {
+                bestByPhase.put(key, p);
+            } else {
+                Payment existing = bestByPhase.get(key);
+                if (p.getStatus() == PaymentStatus.COMPLETED && existing.getStatus() != PaymentStatus.COMPLETED) {
+                    toDelete.add(existing);
+                    bestByPhase.put(key, p);
+                } else if (existing.getStatus() == PaymentStatus.COMPLETED && p.getStatus() != PaymentStatus.COMPLETED) {
+                    toDelete.add(p);
+                }
+            }
+        }
+
+        if (!toDelete.isEmpty()) {
+            try {
+                paymentRepository.deleteAll(toDelete);
+            } catch (Exception ignored) {}
+        }
+
+        return bestByPhase.values().stream()
                 .map(DTOHelper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -84,7 +118,12 @@ public class PaymentServiceImpl implements PaymentService {
         Phase phase = phaseRepository.findById(paymentDTO.getPhaseId())
                 .orElseThrow(() -> new CustomException("Phase not found", HttpStatus.NOT_FOUND));
 
-        Payment payment = new Payment();
+        // Mettre à jour le paiement PENDING existant s'il existe, sinon créer
+        Payment payment = paymentRepository.findByEnrollmentId(enrollment.getId()).stream()
+                .filter(p -> p.getPhase() != null && p.getPhase().getId().equals(phase.getId()) && p.getStatus() == PaymentStatus.PENDING)
+                .findFirst()
+                .orElse(new Payment());
+
         payment.setAmount(paymentDTO.getAmount());
         payment.setPaymentDate(LocalDate.now());
         payment.setPaymentMethod(paymentDTO.getPaymentMethod() != null ? paymentDTO.getPaymentMethod() : "Stripe");
@@ -198,6 +237,12 @@ public class PaymentServiceImpl implements PaymentService {
             if (dataObjectDeserializer.getObject().isPresent()) {
                 Session session = (Session) dataObjectDeserializer.getObject().get();
                 if (session.getMetadata() != null) {
+                    String comboIdStr = session.getMetadata().get("comboId");
+                    if (comboIdStr != null) {
+                        try {
+                            comboEnrollmentService.verifyComboPayment(session.getId(), Long.parseLong(comboIdStr));
+                        } catch (Exception ignored) {}
+                    }
                     String enrollmentIdStr = session.getMetadata().get("enrollmentId");
                     String phaseIdStr = session.getMetadata().get("phaseId");
                     if (enrollmentIdStr != null && phaseIdStr != null) {
@@ -256,7 +301,14 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
 
-        Payment payment = new Payment();
+        final Long targetPhaseId = phase.getId();
+
+        // Mettre à jour le paiement PENDING existant s'il existe pour cette inscription et phase
+        Payment payment = paymentRepository.findByEnrollmentId(enrollment.getId()).stream()
+                .filter(p -> p.getPhase() != null && p.getPhase().getId().equals(targetPhaseId) && p.getStatus() == PaymentStatus.PENDING)
+                .findFirst()
+                .orElse(new Payment());
+
         double amountPaid = session.getAmountTotal() != null ? session.getAmountTotal() / 100.0 : (phase.getPrice() != null ? phase.getPrice() : 0.0);
         payment.setAmount(amountPaid);
         payment.setPaymentDate(LocalDate.now());

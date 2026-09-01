@@ -52,4 +52,12 @@ public class Enrollment {
 
     @OneToMany(mappedBy = "enrollment")
     private List<Payment> payments = new ArrayList<>();
+
+    /**
+     * Référence au combo dont cet enrollment fait partie.
+     * Null si inscription individuelle (hors combo).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "combo_enrollment_id")
+    private ComboEnrollment comboEnrollment;
 }

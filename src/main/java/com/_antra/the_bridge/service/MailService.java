@@ -518,4 +518,126 @@ public class MailService {
       log.error("Failed to send formateur welcome email to {}", to, e);
     }
   }
+
+  // ─── Combo Confirmation Email ───────────────────────────────────────────────
+
+  @Async
+  public void sendComboConfirmationEmail(
+      String to,
+      String firstName,
+      String receiptRef,
+      java.util.List<String> formationTitles,
+      double totalPrice,
+      double discountPercent,
+      double finalPrice) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+      helper.setFrom(fromEmail, "The Bridge — 9antra");
+      helper.setTo(to);
+      helper.setSubject("The Bridge | ✅ Votre parcours personnalisé est activé — " + receiptRef);
+
+      StringBuilder rows = new StringBuilder();
+      for (String title : formationTitles) {
+        rows.append("""
+            <tr>
+              <td style="padding:10px 16px;border-bottom:1px solid #1E1E40;color:#C8C8E8;font-size:13px;">%s</td>
+            </tr>
+            """.formatted(title));
+      }
+
+      String html = """
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head><meta charset="UTF-8"><title>Parcours Confirmé</title></head>
+          <body style="margin:0;padding:0;background:#08081A;font-family:'Inter',Arial,sans-serif;">
+            <table width="100%%" cellpadding="0" cellspacing="0">
+              <tr><td align="center" style="padding:40px 20px;">
+                <table width="600" cellpadding="0" cellspacing="0"
+                       style="background:linear-gradient(160deg,#12122A,#0D0D22);border-radius:20px;
+                              border:1px solid #2A2A4A;overflow:hidden;">
+                  <!-- Header -->
+                  <tr><td style="background:linear-gradient(90deg,#C62761,#F5A623);padding:4px;"></td></tr>
+                  <tr><td style="padding:36px 40px 20px;">
+                    <div style="font-size:28px;margin-bottom:6px;">🎉</div>
+                    <h1 style="margin:0;color:#FFFFFF;font-size:22px;font-weight:800;">
+                      Parcours activé, %s !
+                    </h1>
+                    <p style="color:#8888AA;font-size:13px;margin:8px 0 0;">
+                      Votre parcours personnalisé a été confirmé et vos inscriptions sont actives.
+                    </p>
+                  </td></tr>
+                  <!-- Receipt ref -->
+                  <tr><td style="padding:0 40px 24px;">
+                    <div style="background:#1A1A35;border:1px solid #C62761;border-radius:12px;
+                                padding:14px 20px;display:flex;align-items:center;gap:12px;">
+                      <span style="font-size:11px;color:#8888AA;text-transform:uppercase;
+                                   letter-spacing:1px;display:block;margin-bottom:4px;">Référence reçu</span>
+                      <span style="font-size:18px;font-weight:800;color:#F5A623;
+                                   font-family:'Courier New',monospace;">%s</span>
+                    </div>
+                  </td></tr>
+                  <!-- Formations -->
+                  <tr><td style="padding:0 40px 16px;">
+                    <p style="color:#8888AA;font-size:11px;text-transform:uppercase;
+                               letter-spacing:1px;margin:0 0 8px;">Formations incluses</p>
+                    <table width="100%%" cellpadding="0" cellspacing="0"
+                           style="background:#111130;border:1px solid #2A2A4A;border-radius:12px;overflow:hidden;">
+                      %s
+                    </table>
+                  </td></tr>
+                  <!-- Pricing -->
+                  <tr><td style="padding:0 40px 32px;">
+                    <table width="100%%" cellpadding="0" cellspacing="0"
+                           style="background:#111130;border:1px solid #2A2A4A;border-radius:12px;padding:16px;">
+                      <tr>
+                        <td style="padding:8px 16px;color:#8888AA;font-size:13px;">Sous-total</td>
+                        <td style="padding:8px 16px;text-align:right;color:#C8C8E8;font-size:13px;">%.2f TND</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 16px;color:#F5A623;font-size:13px;font-weight:700;">
+                          Remise combo (%.0f%%)
+                        </td>
+                        <td style="padding:8px 16px;text-align:right;color:#F5A623;font-size:13px;font-weight:700;">
+                          -%.2f TND
+                        </td>
+                      </tr>
+                      <tr style="border-top:1px solid #2A2A4A;">
+                        <td style="padding:14px 16px;color:#FFFFFF;font-size:16px;font-weight:800;">Total payé</td>
+                        <td style="padding:14px 16px;text-align:right;color:#C62761;
+                                   font-size:18px;font-weight:800;font-family:'Courier New',monospace;">
+                          %.2f TND
+                        </td>
+                      </tr>
+                    </table>
+                  </td></tr>
+                  <!-- CTA -->
+                  <tr><td style="padding:0 40px 40px;text-align:center;">
+                    <a href="http://localhost:4200/dashboard/stagiaire/overview"
+                       style="display:inline-block;background:linear-gradient(90deg,#C62761,#F5A623);
+                              color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:12px;
+                              font-size:14px;font-weight:800;">
+                      Accéder à mon espace →
+                    </a>
+                  </td></tr>
+                  <!-- Footer -->
+                  <tr><td style="padding:20px 40px;border-top:1px solid #1E1E40;text-align:center;">
+                    <p style="color:#555577;font-size:11px;margin:0;">© 2026 The Bridge — 9antra</p>
+                  </td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </body>
+          </html>
+          """.formatted(
+              firstName, receiptRef, rows.toString(),
+              totalPrice, discountPercent, totalPrice - finalPrice, finalPrice);
+
+      helper.setText(html, true);
+      mailSender.send(message);
+    } catch (Exception e) {
+      log.error("Failed to send combo confirmation email to {}", to, e);
+    }
+  }
 }
+

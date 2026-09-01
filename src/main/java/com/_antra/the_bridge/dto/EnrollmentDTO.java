@@ -36,4 +36,7 @@ public class EnrollmentDTO {
     private String rejectionReason;
     private LocalDate respondedAt;
     private String customPlan;
+
+    /** ID du ComboEnrollment associé (null si inscription individuelle) */
+    private Long comboEnrollmentId;
 }
