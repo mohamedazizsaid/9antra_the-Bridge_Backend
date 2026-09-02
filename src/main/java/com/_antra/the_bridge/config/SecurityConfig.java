@@ -72,6 +72,7 @@ public class SecurityConfig {
                                 "/api/webhook",
                                 "/api/payments/stripe/verify",
                                 "/api/combo-enrollments/stripe/verify",
+                                "/api/onboarding/stage/stripe/verify",
                                 "/ws/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",

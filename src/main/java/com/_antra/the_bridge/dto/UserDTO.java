@@ -31,4 +31,6 @@ public class UserDTO {
     private Boolean mustChangePassword;
     private String password; // Only used for formateur creation, never returned
     private String specialty;
+    private String cin;
+    private Boolean onboardingCompleted;
 }

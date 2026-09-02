@@ -26,4 +26,5 @@ public class AuthResponse {
     private Status status;
     private LocalDate createdAt;
     private String authProvider;
+    private String cin;
 }

@@ -68,6 +68,9 @@ public class UserServiceImpl implements UserService {
         if (profileDTO.getAvatar() != null) {
             user.setAvatar(profileDTO.getAvatar());
         }
+        if (profileDTO.getCin() != null) {
+            user.setCin(profileDTO.getCin());
+        }
 
         userRepository.save(user);
         return DTOHelper.toDTO(user);

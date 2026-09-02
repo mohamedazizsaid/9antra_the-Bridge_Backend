@@ -32,6 +32,7 @@ public class User {
     private String email;
     private String password;
     private String phone;
+    private String cin;
 
     private LocalDate createdAt;
     private LocalDate lastActivity;

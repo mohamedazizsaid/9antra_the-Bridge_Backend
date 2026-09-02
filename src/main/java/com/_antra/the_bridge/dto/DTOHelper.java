@@ -24,6 +24,77 @@ public class DTOHelper {
                 .lastActivity(user.getLastActivity())
                 .authProvider(user.getAuthProvider())
                 .mustChangePassword(user.isMustChangePassword())
+                .cin(user.getCin())
+                .build();
+    }
+
+    public static StageInscriptionDTO toStageInscriptionDTO(StageInscription s) {
+        if (s == null) return null;
+        User student = s.getStudent();
+        List<Long> formationIds = s.getSelectedFormations() != null
+                ? s.getSelectedFormations().stream().map(Formation::getId).collect(Collectors.toList())
+                : new ArrayList<>();
+        List<String> formationTitles = s.getSelectedFormations() != null
+                ? s.getSelectedFormations().stream().map(Formation::getTitle).collect(Collectors.toList())
+                : new ArrayList<>();
+        return StageInscriptionDTO.builder()
+                .id(s.getId())
+                // Stagiaire
+                .studentId(student != null ? student.getId() : null)
+                .studentFirstName(student != null ? student.getFirstName() : null)
+                .studentLastName(student != null ? student.getLastName() : null)
+                .studentEmail(student != null ? student.getEmail() : null)
+                .studentAvatar(student != null ? student.getAvatar() : null)
+                .studentCin(student != null ? student.getCin() : null)
+                // Type
+                .wantsInternship(s.isWantsInternship())
+                // Stage
+                .stageProjectTitle(s.getStageProjectTitle())
+                .stageDurationWeeks(s.getStageDurationWeeks())
+                .demandeStageUrl(s.getDemandeStageUrl())
+                .lettreAffectationUrl(s.getLettreAffectationUrl())
+                // Formations
+                .selectedFormationIds(formationIds)
+                .selectedFormationTitles(formationTitles)
+                // Prix
+                .originalPrice(s.getOriginalPrice())
+                .discountAmount(s.getDiscountAmount())
+                .discountReason(s.getDiscountReason())
+                .totalPrice(s.getTotalPrice())
+                // Parrainage
+                .referralEmail(s.getReferralEmail())
+                .referralStatus(s.getReferralStatus())
+                .referralDiscountApplied(s.isReferralDiscountApplied())
+                // Paiement
+                .paymentMode(s.getPaymentMode())
+                .payNow(s.isPayNow())
+                .cashDiscountApplied(s.isCashDiscountApplied())
+                .stripeSessionId(s.getStripeSessionId())
+                .stripePaymentUrl(s.getStripePaymentUrl())
+                .stripePaymentConfirmed(s.isStripePaymentConfirmed())
+                // Admin
+                .status(s.getStatus())
+                .adminNotes(s.getAdminNotes())
+                .adminPaymentConfirmed(s.isAdminPaymentConfirmed())
+                .adminPaymentDate(s.getAdminPaymentDate())
+                // Encadrant
+                .supervisorId(s.getSupervisor() != null ? s.getSupervisor().getId() : null)
+                .supervisorFirstName(s.getSupervisor() != null ? s.getSupervisor().getFirstName() : null)
+                .supervisorLastName(s.getSupervisor() != null ? s.getSupervisor().getLastName() : null)
+                .supervisorEmail(s.getSupervisor() != null ? s.getSupervisor().getEmail() : null)
+                .supervisorAvatar(s.getSupervisor() != null ? s.getSupervisor().getAvatar() : null)
+                // Source
+                .heardFrom(s.getHeardFrom())
+                .heardFromOther(s.getHeardFromOther())
+                // Engagement
+                .termsAccepted(s.isTermsAccepted())
+                .termsAcceptedAt(s.getTermsAcceptedAt())
+                // Attestation PDF
+                .attestationPdfUrl(s.getAttestationPdfUrl())
+                // Statut
+                .onboardingCompleted(s.isOnboardingCompleted())
+                .completedAt(s.getCompletedAt())
+                .createdAt(s.getCreatedAt())
                 .build();
     }
 

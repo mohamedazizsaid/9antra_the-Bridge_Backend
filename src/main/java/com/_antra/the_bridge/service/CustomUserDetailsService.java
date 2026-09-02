@@ -24,9 +24,16 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + username));
 
+        boolean enabled = user.getStatus() == com._antra.the_bridge.enumType.Status.ACTIVE;
+        boolean accountNonLocked = user.getStatus() != com._antra.the_bridge.enumType.Status.BANNED;
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
+                enabled,
+                true,
+                true,
+                accountNonLocked,
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
     }

@@ -40,6 +40,46 @@ public class CloudinaryService {
     }
 
     /**
+     * Upload a stage PDF document to Cloudinary under the_bridge/stage-docs/ folder.
+     * Returns the secure HTTPS URL of the uploaded document.
+     */
+    @SuppressWarnings("unchecked")
+    public String uploadStagePdf(MultipartFile file, String prefix) {
+        try {
+            String publicId = "the_bridge/stage-docs/" + prefix + "-" + UUID.randomUUID();
+            Map<String, Object> options = ObjectUtils.asMap(
+                    "public_id",     publicId,
+                    "overwrite",     true,
+                    "resource_type", "raw"
+            );
+            Map<String, Object> result = cloudinary.uploader().upload(file.getBytes(), options);
+            return (String) result.get("secure_url");
+        } catch (IOException e) {
+            throw new RuntimeException("Échec de l'upload du document PDF: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Upload raw PDF bytes (e.g. generated in-memory with PDFBox) to Cloudinary.
+     * Returns the secure HTTPS URL of the uploaded document.
+     */
+    @SuppressWarnings("unchecked")
+    public String uploadPdfBytes(byte[] pdfBytes, String prefix) {
+        try {
+            String publicId = "the_bridge/attestations/" + prefix + "-" + UUID.randomUUID();
+            Map<String, Object> options = ObjectUtils.asMap(
+                    "public_id",     publicId,
+                    "overwrite",     true,
+                    "resource_type", "raw"
+            );
+            Map<String, Object> result = cloudinary.uploader().upload(pdfBytes, options);
+            return (String) result.get("secure_url");
+        } catch (IOException e) {
+            throw new RuntimeException("Échec de l'upload du PDF d'attestation: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Delete an image from Cloudinary by its URL public ID.
      */
     public void deleteByUrl(String secureUrl) {

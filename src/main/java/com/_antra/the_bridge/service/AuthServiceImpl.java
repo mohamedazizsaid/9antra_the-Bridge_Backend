@@ -76,7 +76,8 @@ public class AuthServiceImpl implements AuthService {
                 passwordEncoder.encode(request.getPassword()),
                 request.getPhone(),
                 avatarUrl,
-                verificationCode);
+                verificationCode,
+                request.getCin());
         pendingRegistrations.put(request.getEmail(), pending);
 
         // Send verification email (async)
@@ -116,6 +117,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(pending.encodedPassword);
         user.setPhone(pending.phone);
         user.setAvatar(pending.avatarUrl);
+        user.setCin(pending.cin);
         user.setRole(Role.STAGIAIRE);
         user.setStatus(Status.ACTIVE);
         user.setEmailVerified(true);
@@ -163,15 +165,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException("Utilisateur non trouvé", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new CustomException("Identifiants incorrects ou compte inexistant", HttpStatus.UNAUTHORIZED));
 
         if (!user.isEmailVerified()) {
             throw new CustomException("Veuillez vérifier votre email avant de vous connecter", HttpStatus.FORBIDDEN);
         }
+
+        if (user.getStatus() != Status.ACTIVE) {
+            String message = switch (user.getStatus()) {
+                case INACTIVE -> "Votre compte est inactif. Veuillez contacter l'administration 9antra pour l'activer.";
+                case BANNED -> "Votre compte a été suspendu / banni. Veuillez contacter le support.";
+                case PENDING -> "Votre compte est en attente d'activation.";
+                default -> "Votre compte n'est pas actif (" + user.getStatus() + "). Connexion non autorisée.";
+            };
+            throw new CustomException(message, HttpStatus.FORBIDDEN);
+        }
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
         user.setLastActivity(LocalDate.now());
         userRepository.save(user);
@@ -217,8 +229,17 @@ public class AuthServiceImpl implements AuthService {
         User user;
 
         if (existing.isPresent()) {
-            // Update last activity
             user = existing.get();
+            if (user.getStatus() != Status.ACTIVE) {
+                String message = switch (user.getStatus()) {
+                    case INACTIVE -> "Votre compte est inactif. Veuillez contacter l'administration 9antra.";
+                    case BANNED -> "Votre compte a été suspendu / banni. Veuillez contacter le support.";
+                    case PENDING -> "Votre compte est en attente d'activation.";
+                    default -> "Votre compte n'est pas actif (" + user.getStatus() + "). Connexion non autorisée.";
+                };
+                throw new CustomException(message, HttpStatus.FORBIDDEN);
+            }
+            // Update last activity
             user.setLastActivity(LocalDate.now());
             userRepository.save(user);
         } else {
@@ -261,6 +282,7 @@ public class AuthServiceImpl implements AuthService {
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .authProvider(user.getAuthProvider())
+                .cin(user.getCin())
                 .build();
     }
 
@@ -308,9 +330,11 @@ public class AuthServiceImpl implements AuthService {
         String phone;
         String avatarUrl;
         String verificationCode;
+        String cin;
 
         PendingRegistration(String firstName, String lastName, int age, String email,
-                String encodedPassword, String phone, String avatarUrl, String verificationCode) {
+                String encodedPassword, String phone, String avatarUrl, String verificationCode,
+                String cin) {
             this.firstName = firstName;
             this.lastName = lastName;
             this.age = age;
@@ -319,6 +343,7 @@ public class AuthServiceImpl implements AuthService {
             this.phone = phone;
             this.avatarUrl = avatarUrl;
             this.verificationCode = verificationCode;
+            this.cin = cin;
         }
     }
 }
