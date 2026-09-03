@@ -53,6 +53,10 @@ public class User {
     // OAuth2 provider user ID
     private String providerId;
 
+    // Onboarding status
+    @Column(name = "onboarding_completed", nullable = false)
+    private boolean onboardingCompleted = false;
+
     @OneToMany(mappedBy = "student")
     private List<Enrollment> enrollments;
 

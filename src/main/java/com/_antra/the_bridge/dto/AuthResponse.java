@@ -27,4 +27,5 @@ public class AuthResponse {
     private LocalDate createdAt;
     private String authProvider;
     private String cin;
+    private boolean onboardingCompleted;
 }

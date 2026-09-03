@@ -21,7 +21,17 @@ import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 
-import org.apache.pdfbox.pdmodel.font.PDFont;
+import com._antra.the_bridge.entity.ComboEnrollment;
+import com._antra.the_bridge.entity.Enrollment;
+import com._antra.the_bridge.entity.Payment;
+import com._antra.the_bridge.entity.Phase;
+import com._antra.the_bridge.enumType.EnrollmentStatus;
+import com._antra.the_bridge.enumType.PaymentStatus;
+import com._antra.the_bridge.repository.ComboEnrollmentRepository;
+import com._antra.the_bridge.repository.EnrollmentRepository;
+import com._antra.the_bridge.repository.PaymentRepository;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +57,9 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
     private final MailService mailService;
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final EnrollmentRepository enrollmentRepository;
+    private final ComboEnrollmentRepository comboEnrollmentRepository;
+    private final PaymentRepository paymentRepository;
 
     @Value("${stripe.api-key:sk_test_mock}")
     private String stripeApiKey;
@@ -63,7 +76,10 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
             CloudinaryService cloudinaryService,
             MailService mailService,
             NotificationRepository notificationRepository,
-            SimpMessagingTemplate messagingTemplate) {
+            SimpMessagingTemplate messagingTemplate,
+            EnrollmentRepository enrollmentRepository,
+            ComboEnrollmentRepository comboEnrollmentRepository,
+            PaymentRepository paymentRepository) {
         this.stageRepo = stageRepo;
         this.userRepository = userRepository;
         this.formationRepository = formationRepository;
@@ -71,6 +87,9 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         this.mailService = mailService;
         this.notificationRepository = notificationRepository;
         this.messagingTemplate = messagingTemplate;
+        this.enrollmentRepository = enrollmentRepository;
+        this.comboEnrollmentRepository = comboEnrollmentRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     // ─── SUBMIT ONBOARDING ────────────────────────────────────────────────────
@@ -82,7 +101,172 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new CustomException("Stagiaire introuvable", HttpStatus.NOT_FOUND));
 
-        // Prevent multiple concurrent active stages
+        List<Long> formationIds = request.getSelectedFormationIds() != null ? request.getSelectedFormationIds() : new ArrayList<>();
+        List<Formation> formations = formationIds.isEmpty() ? new ArrayList<>() : formationRepository.findAllById(formationIds);
+
+        InternshipPaymentMode paymentMode = null;
+        if (request.getPaymentMode() != null) {
+            try {
+                paymentMode = InternshipPaymentMode.valueOf(request.getPaymentMode());
+            } catch (IllegalArgumentException e) {
+                throw new CustomException("Mode de paiement invalide: " + request.getPaymentMode(),
+                        HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        // =========================================================================
+        // CAS 1 : FORMATION SIMPLE UNIQUE (wantsInternship == false && 1 formation)
+        // AUCUN stage n'est créé dans stage_inscription !
+        // =========================================================================
+        if (!request.isWantsInternship() && formations.size() == 1) {
+            Formation formation = formations.get(0);
+
+            Enrollment enrollment = enrollmentRepository.findByStudentIdAndFormationId(studentId, formation.getId())
+                    .orElse(new Enrollment());
+            enrollment.setStudent(student);
+            enrollment.setFormation(formation);
+            enrollment.setEnrollmentDate(LocalDate.now());
+            enrollment.setStatus(EnrollmentStatus.APPROVED);
+            Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+
+            // Générer les échéances de paiement
+            generatePayments(savedEnrollment, formation);
+
+            // Marquer l'utilisateur comme ayant complété son onboarding
+            student.setOnboardingCompleted(true);
+            userRepository.save(student);
+
+            // Créer session Stripe si paiement immédiat en ligne demandé
+            String stripeUrl = null;
+            if (request.isPayNow() && paymentMode == InternshipPaymentMode.STRIPE && formation.getTotalPrice() != null && formation.getTotalPrice() > 0) {
+                try {
+                    stripeUrl = createStripeCheckoutSessionForSingleFormation(savedEnrollment, formation, student);
+                } catch (Exception e) {
+                    System.err.println("Stripe session creation warning: " + e.getMessage());
+                }
+            }
+
+            // Notification stagiaire
+            sendNotification(student, "🎉 Inscription confirmée",
+                    "Votre inscription à la formation « " + formation.getTitle() + " » a été confirmée avec succès !");
+
+            return StageInscriptionDTO.builder()
+                    .id(savedEnrollment.getId())
+                    .studentId(student.getId())
+                    .studentFirstName(student.getFirstName())
+                    .studentLastName(student.getLastName())
+                    .studentEmail(student.getEmail())
+                    .studentAvatar(student.getAvatar())
+                    .studentCin(student.getCin())
+                    .wantsInternship(false)
+                    .selectedFormationIds(List.of(formation.getId()))
+                    .selectedFormationTitles(List.of(formation.getTitle()))
+                    .originalPrice(formation.getTotalPrice())
+                    .totalPrice(formation.getTotalPrice())
+                    .paymentMode(paymentMode)
+                    .payNow(request.isPayNow())
+                    .stripePaymentUrl(stripeUrl)
+                    .onboardingCompleted(true)
+                    .completedAt(LocalDate.now())
+                    .createdAt(LocalDate.now())
+                    .build();
+        }
+
+        // =========================================================================
+        // CAS 2 : COMBO MULTI-FORMATIONS (wantsInternship == false && >= 2 formations)
+        // AUCUN stage n'est créé dans stage_inscription !
+        // =========================================================================
+        if (!request.isWantsInternship() && formations.size() >= 2) {
+            double totalPrice = formations.stream()
+                    .mapToDouble(f -> f.getTotalPrice() != null ? f.getTotalPrice() : 0.0)
+                    .sum();
+            double discountPercent = ComboEnrollment.computeDiscountPercent(formations.size());
+            double finalPrice = totalPrice * (1.0 - discountPercent / 100.0);
+
+            String receiptRef = "BRG-COMBO-" +
+                    LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-" +
+                    UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+            ComboEnrollment combo = new ComboEnrollment();
+            combo.setStudent(student);
+            combo.setFormations(formations);
+            combo.setTotalPrice(totalPrice);
+            combo.setDiscountPercent(discountPercent);
+            combo.setFinalPrice(finalPrice);
+            combo.setReceiptRef(receiptRef);
+            combo.setCreatedAt(LocalDate.now());
+            // Toujours PENDING_PAYMENT tant qu'aucun règlement n'a été validé
+            combo.setStatus("PENDING_PAYMENT");
+            combo.setPaidAt(null);
+
+            ComboEnrollment savedCombo = comboEnrollmentRepository.save(combo);
+
+            // Générer les inscriptions aux formations du combo (sans créer d'échéances par phase)
+            for (Formation f : formations) {
+                Enrollment e = enrollmentRepository.findByStudentIdAndFormationId(studentId, f.getId())
+                        .orElse(new Enrollment());
+                e.setStudent(student);
+                e.setFormation(f);
+                e.setEnrollmentDate(LocalDate.now());
+                e.setStatus(EnrollmentStatus.APPROVED);
+                e.setComboEnrollment(savedCombo);
+                Enrollment savedE = enrollmentRepository.save(e);
+
+                // Pour un combo, le paiement est global : supprimer tout paiement résiduel par phase
+                List<Payment> existingPayments = paymentRepository.findByEnrollmentId(savedE.getId());
+                if (existingPayments != null && !existingPayments.isEmpty()) {
+                    paymentRepository.deleteAll(existingPayments);
+                }
+            }
+
+            // Session Stripe si paiement immédiat en ligne demandé
+            String stripeUrl = null;
+            if (request.isPayNow() && paymentMode == InternshipPaymentMode.STRIPE && finalPrice > 0) {
+                try {
+                    stripeUrl = createStripeCheckoutSessionForCombo(savedCombo, formations, finalPrice, student);
+                    savedCombo.setStripeSessionId(extractSessionId(stripeUrl));
+                    comboEnrollmentRepository.save(savedCombo);
+                } catch (Exception e) {
+                    System.err.println("Stripe combo session creation warning: " + e.getMessage());
+                }
+            }
+
+            student.setOnboardingCompleted(true);
+            userRepository.save(student);
+
+            String notifMsg = request.isPayNow()
+                    ? "Votre parcours combo de " + formations.size() + " formations a été enregistré avec " + Math.round(discountPercent) + "% de remise !"
+                    : "Votre parcours combo de " + formations.size() + " formations a été enregistré. Vous pouvez le régler à tout moment depuis votre espace.";
+            sendNotification(student, "🎁 Parcours Combo Enregistré", notifMsg);
+
+            return StageInscriptionDTO.builder()
+                    .id(savedCombo.getId())
+                    .studentId(student.getId())
+                    .studentFirstName(student.getFirstName())
+                    .studentLastName(student.getLastName())
+                    .studentEmail(student.getEmail())
+                    .studentAvatar(student.getAvatar())
+                    .studentCin(student.getCin())
+                    .wantsInternship(false)
+                    .selectedFormationIds(formations.stream().map(Formation::getId).collect(Collectors.toList()))
+                    .selectedFormationTitles(formations.stream().map(Formation::getTitle).collect(Collectors.toList()))
+                    .originalPrice(totalPrice)
+                    .discountAmount(totalPrice - finalPrice)
+                    .discountReason("Remise combo (" + Math.round(discountPercent) + "%)")
+                    .totalPrice(finalPrice)
+                    .paymentMode(paymentMode)
+                    .payNow(request.isPayNow())
+                    .stripePaymentUrl(stripeUrl)
+                    .onboardingCompleted(true)
+                    .completedAt(LocalDate.now())
+                    .createdAt(LocalDate.now())
+                    .build();
+        }
+
+        // =========================================================================
+        // CAS 3 : STAGE FACULTATIF (wantsInternship == true)
+        // SEULEMENT ICI un StageInscription est créé !
+        // =========================================================================
         List<StageInscription> existingList = stageRepo.findAllByStudentIdOrderByCreatedAtDesc(studentId);
         boolean hasEngagedStage = existingList.stream()
                 .anyMatch(i -> i.getStatus() == InternshipStatus.PENDING_REVIEW ||
@@ -96,71 +280,45 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
 
         StageInscription inscription = new StageInscription();
         inscription.setStudent(student);
-        inscription.setWantsInternship(request.isWantsInternship());
+        inscription.setWantsInternship(true);
 
-        // ─── Stage info (if wantsInternship) ──────────────────────────────────
-        if (request.isWantsInternship()) {
-            if (request.getStageProjectTitle() == null || request.getStageProjectTitle().isBlank()) {
-                throw new CustomException("Le titre du projet de stage est obligatoire", HttpStatus.BAD_REQUEST);
-            }
-            inscription.setStageProjectTitle(request.getStageProjectTitle());
-            inscription.setStageDurationWeeks(request.getStageDurationWeeks());
+        if (request.getStageProjectTitle() == null || request.getStageProjectTitle().isBlank()) {
+            throw new CustomException("Le titre du projet de stage est obligatoire", HttpStatus.BAD_REQUEST);
+        }
+        inscription.setStageProjectTitle(request.getStageProjectTitle());
+        inscription.setStageDurationWeeks(request.getStageDurationWeeks());
 
-            // Upload PDFs to Cloudinary
-            if (demande != null && !demande.isEmpty()) {
-                String demandeUrl = cloudinaryService.uploadStagePdf(demande, "demande-stage");
-                inscription.setDemandeStageUrl(demandeUrl);
-            }
-            if (lettre != null && !lettre.isEmpty()) {
-                String lettreUrl = cloudinaryService.uploadStagePdf(lettre, "lettre-affectation");
-                inscription.setLettreAffectationUrl(lettreUrl);
-            }
+        if (demande != null && !demande.isEmpty()) {
+            String demandeUrl = cloudinaryService.uploadStagePdf(demande, "demande-stage");
+            inscription.setDemandeStageUrl(demandeUrl);
+        }
+        if (lettre != null && !lettre.isEmpty()) {
+            String lettreUrl = cloudinaryService.uploadStagePdf(lettre, "lettre-affectation");
+            inscription.setLettreAffectationUrl(lettreUrl);
         }
 
-        // ─── Formations sélectionnées ──────────────────────────────────────────
-        List<Formation> formations = new ArrayList<>();
-        if (request.getSelectedFormationIds() != null && !request.getSelectedFormationIds().isEmpty()) {
-            formations = formationRepository.findAllById(request.getSelectedFormationIds());
-        }
         inscription.setSelectedFormations(formations);
 
-        // ─── Calcul des prix ───────────────────────────────────────────────────
         double originalPrice = formations.stream()
                 .mapToDouble(f -> f.getTotalPrice() != null ? f.getTotalPrice() : 0.0)
                 .sum();
         inscription.setOriginalPrice(originalPrice);
-
-        // Mode de paiement
-        InternshipPaymentMode paymentMode = null;
-        if (request.getPaymentMode() != null) {
-            try {
-                paymentMode = InternshipPaymentMode.valueOf(request.getPaymentMode());
-            } catch (IllegalArgumentException e) {
-                throw new CustomException("Mode de paiement invalide: " + request.getPaymentMode(),
-                        HttpStatus.BAD_REQUEST);
-            }
-        }
         inscription.setPaymentMode(paymentMode);
-        inscription.setPayNow(request.isPayNow());
+        inscription.setPayNow(false); // Stage facultatif : pas de payNow direct avant approbation admin
 
-        // Remise paiement comptant (10%) — non cumulable avec parrainage
-        boolean cashDiscount = request.isPayNow() || (paymentMode == InternshipPaymentMode.COMPTANT);
+        boolean cashDiscount = paymentMode == InternshipPaymentMode.COMPTANT;
         boolean referralDiscount = false;
 
-        // Parrainage (10%) — envoi email au filleul
         if (request.getReferralEmail() != null && !request.getReferralEmail().isBlank()) {
             inscription.setReferralEmail(request.getReferralEmail());
             inscription.setReferralStatus(ReferralStatus.PENDING);
-            // Remise parrainage uniquement si pas de remise comptant
             if (!cashDiscount) {
                 referralDiscount = true;
                 inscription.setReferralDiscountApplied(true);
             }
-            // Envoi email filleul
             sendReferralEmail(request.getReferralEmail(), student.getFirstName() + " " + student.getLastName());
         }
 
-        // Calcul remise finale (non cumulables)
         double discountAmount = 0.0;
         String discountReason = null;
         if (cashDiscount) {
@@ -175,36 +333,23 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         inscription.setDiscountReason(discountReason);
         inscription.setTotalPrice(originalPrice - discountAmount);
 
-        // ─── Source ────────────────────────────────────────────────────────────
         inscription.setHeardFrom(request.getHeardFrom());
         inscription.setHeardFromOther(request.getHeardFromOther());
-
-        // ─── Engagement ────────────────────────────────────────────────────────
         inscription.setTermsAccepted(request.isTermsAccepted());
         if (request.isTermsAccepted()) {
             inscription.setTermsAcceptedAt(LocalDate.now());
         }
 
-        // ─── Statut ────────────────────────────────────────────────────────────
         inscription.setOnboardingCompleted(true);
         inscription.setCompletedAt(LocalDate.now());
         inscription.setStatus(InternshipStatus.PENDING_REVIEW);
 
         StageInscription saved = stageRepo.save(inscription);
 
-        // ─── Stripe Checkout Session (si STRIPE choisi) ────────────────────────
-        if (paymentMode == InternshipPaymentMode.STRIPE && saved.getTotalPrice() > 0) {
-            try {
-                String stripeUrl = createStripeCheckoutSessionForStage(saved, formations, saved.getTotalPrice());
-                saved.setStripePaymentUrl(stripeUrl);
-                saved = stageRepo.save(saved);
-            } catch (Exception e) {
-                // Log and keep payment url null so it does not block onboarding submission
-                System.err.println("Stripe session creation warning: " + e.getMessage());
-            }
-        }
+        student.setOnboardingCompleted(true);
+        userRepository.save(student);
 
-        // ─── Notification en Temps Réel pour les ADMINS ────────────────────────
+        // Notifier les admins de la nouvelle demande de stage
         notifyAdminsNewStageApplication(saved, student);
 
         return DTOHelper.toStageInscriptionDTO(saved);
@@ -394,6 +539,128 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         } catch (Exception e) {
             throw new CustomException("Erreur lors de la création de la session Stripe: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String createStripeCheckoutSessionForSingleFormation(Enrollment enrollment, Formation formation, User student) {
+        Stripe.apiKey = this.stripeApiKey;
+        double price = formation.getTotalPrice() != null ? formation.getTotalPrice() : 0.0;
+        long amountInCents = Math.max(50, Math.round(price * 100));
+
+        String delimiter = stripeSuccessUrl != null && stripeSuccessUrl.contains("?") ? "&" : "?";
+        String successUrl = (stripeSuccessUrl != null ? stripeSuccessUrl : "http://localhost:4200/payment-success")
+                + delimiter + "enrollmentId=" + enrollment.getId();
+
+        SessionCreateParams params = SessionCreateParams.builder()
+                .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(successUrl)
+                .setCancelUrl(stripeCancelUrl)
+                .addLineItem(
+                        SessionCreateParams.LineItem.builder()
+                                .setQuantity(1L)
+                                .setPriceData(
+                                        SessionCreateParams.LineItem.PriceData.builder()
+                                                .setCurrency("eur")
+                                                .setUnitAmount(amountInCents)
+                                                .setProductData(
+                                                        SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                                                .setName("The Bridge — Formation : " + formation.getTitle())
+                                                                .setDescription("Inscription à la formation certifiante " + formation.getTitle())
+                                                                .build())
+                                                .build())
+                                .build())
+                .putMetadata("enrollmentId", String.valueOf(enrollment.getId()))
+                .putMetadata("studentId", String.valueOf(student.getId()))
+                .build();
+
+        try {
+            Session session = Session.create(params);
+            return session.getUrl();
+        } catch (Exception e) {
+            throw new CustomException("Erreur Stripe : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String createStripeCheckoutSessionForCombo(ComboEnrollment combo, List<Formation> formations, double finalPrice, User student) {
+        Stripe.apiKey = this.stripeApiKey;
+        long amountInCents = Math.max(50, Math.round(finalPrice * 100));
+
+        String delimiter = stripeSuccessUrl != null && stripeSuccessUrl.contains("?") ? "&" : "?";
+        String successUrl = (stripeSuccessUrl != null ? stripeSuccessUrl : "http://localhost:4200/payment-success")
+                + delimiter + "comboId=" + combo.getId();
+
+        SessionCreateParams params = SessionCreateParams.builder()
+                .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                .setMode(SessionCreateParams.Mode.PAYMENT)
+                .setSuccessUrl(successUrl)
+                .setCancelUrl(stripeCancelUrl)
+                .addLineItem(
+                        SessionCreateParams.LineItem.builder()
+                                .setQuantity(1L)
+                                .setPriceData(
+                                        SessionCreateParams.LineItem.PriceData.builder()
+                                                .setCurrency("eur")
+                                                .setUnitAmount(amountInCents)
+                                                .setProductData(
+                                                        SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                                                .setName("The Bridge — Parcours Combo (" + formations.size() + " formations)")
+                                                                .setDescription("Reçu N° " + combo.getReceiptRef())
+                                                                .build())
+                                                .build())
+                                .build())
+                .putMetadata("comboId", String.valueOf(combo.getId()))
+                .putMetadata("studentId", String.valueOf(student.getId()))
+                .build();
+
+        try {
+            Session session = Session.create(params);
+            return session.getUrl();
+        } catch (Exception e) {
+            throw new CustomException("Erreur Stripe : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String extractSessionId(String stripeUrl) {
+        if (stripeUrl == null) return null;
+        try {
+            if (stripeUrl.contains("/c/pay/")) {
+                String sub = stripeUrl.substring(stripeUrl.indexOf("/c/pay/") + 7);
+                int hashIdx = sub.indexOf("#");
+                return hashIdx > 0 ? sub.substring(0, hashIdx) : sub;
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return null;
+    }
+
+    private void generatePayments(Enrollment enrollment, Formation formation) {
+        if (formation.getPhases() != null && !formation.getPhases().isEmpty()) {
+            for (Phase phase : formation.getPhases()) {
+                Payment payment = new Payment();
+                payment.setEnrollment(enrollment);
+                payment.setPhase(phase);
+                payment.setAmount(phase.getPrice() != null ? phase.getPrice() : 0.0);
+                payment.setStatus(PaymentStatus.PENDING);
+                int delay = (phase.getPhaseOrder() * 15) - 10;
+                payment.setDueDate(LocalDate.now().plusDays(Math.max(1, delay)));
+                paymentRepository.save(payment);
+            }
+        }
+    }
+
+    private void sendNotification(User recipient, String title, String message) {
+        try {
+            Notification notification = new Notification();
+            notification.setUser(recipient);
+            notification.setTitle(title);
+            notification.setMessage(message);
+            notification.setReadStatus(false);
+            notification.setCreatedAt(LocalDateTime.now());
+            notificationRepository.save(notification);
+        } catch (Exception e) {
+            // Ne pas bloquer le flux principal si la notification échoue
         }
     }
 

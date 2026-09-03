@@ -21,6 +21,14 @@ public class MailService {
   @Value("${spring.mail.username}")
   private String fromEmail;
 
+  @Value("${cors.allowed-origins}")
+  private String corsAllowedOrigins;
+
+  /** Retourne l'URL de base du frontend à partir de cors.allowed-origins. */
+  private String frontendUrl() {
+    return corsAllowedOrigins.trim();
+  }
+
   public MailService(JavaMailSender mailSender) {
     this.mailSender = mailSender;
   }
@@ -98,7 +106,7 @@ public class MailService {
                   <p style="color:#CBD5E1;font-size:14px;line-height:1.7;margin:0 0 24px;">
                     Inscrivez-vous sur The Bridge et bénéficiez automatiquement de 10%% de réduction immédiate sur vos formations et votre stage.
                   </p>
-                  <a href="http://localhost:4200/auth/register"
+                  <a href="%s/auth/register"
                      style="display:inline-block;background:linear-gradient(90deg,#C62761,#F5A623);
                             color:#FFFFFF;text-decoration:none;padding:14px 34px;border-radius:12px;
                             font-size:14px;font-weight:800;box-shadow:0 4px 20px rgba(198,39,97,0.4);">
@@ -114,7 +122,7 @@ public class MailService {
           </table>
         </body>
         </html>
-        """.formatted(referrerName);
+        """.formatted(referrerName, frontendUrl());
   }
 
   private String buildEmailHtml(String firstName, String code) {
@@ -453,7 +461,7 @@ public class MailService {
                       Veuillez régulariser votre situation depuis votre espace stagiaire afin de poursuivre vos cours en toute sérénité.
                     </p>
                     <div style="text-align:center;margin:10px 0 10px;">
-                      <a href="http://localhost:4200/dashboard/stagiaire/paiements"
+                      <a href="%s/dashboard/stagiaire/paiements"
                          style="display:inline-block;background:linear-gradient(90deg,#C62761,#F5A623);color:#FFFFFF;text-decoration:none;padding:12px 30px;border-radius:10px;font-size:13px;font-weight:800;">
                         Accéder à mes Paiements →
                       </a>
@@ -467,7 +475,7 @@ public class MailService {
             </table>
           </body>
           </html>
-          """.formatted(firstName, phaseTitle, amount, dueDate.toString(), daysRemaining);
+          """.formatted(firstName, phaseTitle, amount, dueDate.toString(), daysRemaining, frontendUrl());
 
       helper.setText(htmlContent, true);
       mailSender.send(message);
@@ -616,7 +624,7 @@ public class MailService {
                   <p style="color:#E2E8F0;font-size:13px;margin:0;line-height:1.6;">Vous serez invité(e) à changer votre mot de passe lors de votre première connexion.</p>
                 </div>
                 <div style="text-align:center;margin-top:28px;">
-                  <a href="http://localhost:4200/auth/login"
+                  <a href="%s/auth/login"
                      style="display:inline-block;background:linear-gradient(90deg,#C62761,#F5A623);color:#FFFFFF;text-decoration:none;padding:14px 34px;border-radius:12px;font-size:14px;font-weight:800;">
                     Accéder à mon espace →
                   </a>
@@ -628,7 +636,7 @@ public class MailService {
             </div>
           </body>
           </html>
-          """.formatted(firstName, lastName, to, tempPassword), true);
+          """.formatted(firstName, lastName, to, tempPassword, frontendUrl()), true);
       mailSender.send(message);
     } catch (Exception e) {
       log.error("Failed to send formateur welcome email to {}", to, e);
@@ -729,7 +737,7 @@ public class MailService {
                   </td></tr>
                   <!-- CTA -->
                   <tr><td style="padding:0 40px 40px;text-align:center;">
-                    <a href="http://localhost:4200/dashboard/stagiaire/stage"
+                    <a href="%s/dashboard/stagiaire/stage"
                        style="display:inline-block;background:linear-gradient(90deg,#C62761,#F5A623);
                               color:#FFFFFF;text-decoration:none;padding:14px 34px;border-radius:12px;
                               font-size:14px;font-weight:800;box-shadow:0 4px 20px rgba(198,39,97,0.4);">
@@ -747,7 +755,8 @@ public class MailService {
           </html>
           """.formatted(
               firstName, receiptRef, rows.toString(),
-              totalPrice, discountPercent, totalPrice - finalPrice, finalPrice);
+              totalPrice, discountPercent, totalPrice - finalPrice, finalPrice,
+              frontendUrl());
 
       helper.setText(html, true);
       mailSender.send(message);

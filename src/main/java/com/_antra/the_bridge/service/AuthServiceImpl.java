@@ -283,6 +283,7 @@ public class AuthServiceImpl implements AuthService {
                 .createdAt(user.getCreatedAt())
                 .authProvider(user.getAuthProvider())
                 .cin(user.getCin())
+                .onboardingCompleted(user.isOnboardingCompleted())
                 .build();
     }
 
