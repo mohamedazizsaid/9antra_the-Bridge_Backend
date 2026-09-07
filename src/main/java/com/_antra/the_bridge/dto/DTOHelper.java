@@ -77,12 +77,6 @@ public class DTOHelper {
                 .adminNotes(s.getAdminNotes())
                 .adminPaymentConfirmed(s.isAdminPaymentConfirmed())
                 .adminPaymentDate(s.getAdminPaymentDate())
-                // Encadrant
-                .supervisorId(s.getSupervisor() != null ? s.getSupervisor().getId() : null)
-                .supervisorFirstName(s.getSupervisor() != null ? s.getSupervisor().getFirstName() : null)
-                .supervisorLastName(s.getSupervisor() != null ? s.getSupervisor().getLastName() : null)
-                .supervisorEmail(s.getSupervisor() != null ? s.getSupervisor().getEmail() : null)
-                .supervisorAvatar(s.getSupervisor() != null ? s.getSupervisor().getAvatar() : null)
                 // Source
                 .heardFrom(s.getHeardFrom())
                 .heardFromOther(s.getHeardFromOther())

@@ -389,12 +389,11 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         return DTOHelper.toStageInscriptionDTO(inscription);
     }
 
-    // ─── ADMIN: UPDATE STATUS & ASSIGN SUPERVISOR ───────────────────────────
+    // ─── ADMIN: UPDATE STATUS ───────────────────────────────────────────────
 
     @Override
     @Transactional
-    public StageInscriptionDTO updateInscriptionStatus(Long id, InternshipStatus status, String notes,
-            Integer supervisorId) {
+    public StageInscriptionDTO updateInscriptionStatus(Long id, InternshipStatus status, String notes) {
         StageInscription inscription = stageRepo.findById(id)
                 .orElseThrow(() -> new CustomException("Inscription introuvable", HttpStatus.NOT_FOUND));
 
@@ -404,29 +403,10 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
             inscription.setAdminNotes(notes.trim());
         }
 
-        User supervisor = null;
-        if (supervisorId != null && supervisorId > 0) {
-            supervisor = userRepository.findById(supervisorId)
-                    .orElseThrow(() -> new CustomException("Formateur / Encadrant introuvable", HttpStatus.NOT_FOUND));
-            inscription.setSupervisor(supervisor);
-        }
-
         StageInscription saved = stageRepo.save(inscription);
 
         // ─── Notification en Temps Réel pour le STAGIAIRE ──────────────────────
         notifyStudentStatusUpdate(saved, oldStatus, status, notes);
-
-        // ─── Notification pour l'ENCADRANT (si assigné et approuvé) ───────────
-        if (supervisor != null && (status == InternshipStatus.APPROVED || status == InternshipStatus.ACTIVE)) {
-            User student = saved.getStudent();
-            createAndSendNotification(
-                    supervisor,
-                    "🎓 Nouveau stagiaire sous votre encadrement",
-                    "Vous avez été désigné comme encadrant pour le projet de stage « " +
-                            (saved.getStageProjectTitle() != null ? saved.getStageProjectTitle() : "Stage Facultatif") +
-                            " » du stagiaire " +
-                            (student != null ? student.getFirstName() + " " + student.getLastName() : "") + ".");
-        }
 
         return DTOHelper.toStageInscriptionDTO(saved);
     }
@@ -694,14 +674,9 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         String message;
 
         if (newStatus == InternshipStatus.APPROVED || newStatus == InternshipStatus.ACTIVE) {
-            String supervisorInfo = inscription.getSupervisor() != null
-                    ? " Encadrant assigné : " + inscription.getSupervisor().getFirstName() + " "
-                            + inscription.getSupervisor().getLastName() + "."
-                    : "";
             title = "🎉 Demande de stage approuvée !";
             message = "Félicitations " + student.getFirstName() + " ! Votre convention de stage pour le projet « " +
                     inscription.getStageProjectTitle() + " » a été approuvée par l'administration 9antra." +
-                    supervisorInfo +
                     (notes != null && !notes.isBlank() ? " Remarque : " + notes : "");
         } else if (newStatus == InternshipStatus.REJECTED) {
             title = "⚠️ Demande de stage refusée";
@@ -742,15 +717,6 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         } catch (Exception e) {
             System.err.println("Failed to push notification: " + e.getMessage());
         }
-    }
-
-    // ─── FORMATEUR: GET ASSIGNED STAGES ───────────────────────────────────────
-
-    @Override
-    public List<StageInscriptionDTO> getInscriptionsBySupervisor(int supervisorId) {
-        return stageRepo.findBySupervisorId(supervisorId).stream()
-                .map(DTOHelper::toStageInscriptionDTO)
-                .collect(Collectors.toList());
     }
 
     // ─── HELPER: SEND REFERRAL EMAIL ──────────────────────────────────────────
@@ -819,9 +785,7 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
         String projectTitle = inscription.getStageProjectTitle() != null ? inscription.getStageProjectTitle()
                 : "Projet de Stage";
         int durationWeeks = inscription.getStageDurationWeeks() != null ? inscription.getStageDurationWeeks() : 12;
-        String supervisor = inscription.getSupervisor() != null
-                ? inscription.getSupervisor().getFirstName() + " " + inscription.getSupervisor().getLastName()
-                : "L'équipe 9antra";
+        String encadrant = "L'équipe 9antra";
         String startDate = inscription.getCompletedAt() != null
                 ? inscription.getCompletedAt().minusWeeks(durationWeeks).toString()
                 : "N/A";
@@ -882,7 +846,7 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
             cs.setFont(fontRegular, 11);
             cs.setNonStrokingColor(0.8f, 0.8f, 0.8f);
             cs.newLineAtOffset(margin, pageHeight - 132);
-            cs.showText("Stage Facultatif - Convention Validée et Clôturée");
+            cs.showText("Stage - Convention Validée et Clôturée");
             cs.endText();
 
             // Divider line
@@ -926,7 +890,7 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
             // ── Body Text ─────────────────────────────────────────────────────
             float bodyY = pageHeight - 278;
             String[] bodyLines = {
-                    "a effectué un stage facultatif au sein de notre centre de formation 9antra,",
+                    "a effectué un stage au sein de notre centre de formation 9antra,",
                     "dans le cadre du programme de formation professionnelle certifiante."
             };
             for (String line : bodyLines) {
@@ -948,8 +912,6 @@ public class StageInscriptionServiceImpl implements StageInscriptionService {
             cardY -= 40;
             drawInfoRow(cs, fontBold, fontRegular, margin, cardY, "Période :", "Du " + startDate + " au " + endDate,
                     pageWidth);
-            cardY -= 40;
-            drawInfoRow(cs, fontBold, fontRegular, margin, cardY, "Encadrant :", supervisor, pageWidth);
             cardY -= 40;
             drawInfoRow(cs, fontBold, fontRegular, margin, cardY, "Date d'émission :", issueDate, pageWidth);
 

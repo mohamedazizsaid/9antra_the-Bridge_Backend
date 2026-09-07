@@ -81,7 +81,7 @@ public class StageInscriptionController {
         return ResponseEntity.ok(stageInscriptionService.getInscriptionById(id));
     }
 
-    // ─── ADMIN : Mettre à jour le statut & assigner un encadrant ─────────────
+    // ─── ADMIN : Mettre à jour le statut ───────────────────────────────────────────────
 
     @PutMapping("/api/admin/stage-inscriptions/{id}/status")
     public ResponseEntity<StageInscriptionDTO> updateStatus(
@@ -89,21 +89,13 @@ public class StageInscriptionController {
             @RequestBody Map<String, Object> body) {
         String statusStr = (String) body.get("status");
         String notes = (String) body.get("notes");
-        Integer supervisorId = null;
-        if (body.get("supervisorId") != null) {
-            try {
-                supervisorId = Integer.valueOf(body.get("supervisorId").toString());
-            } catch (NumberFormatException e) {
-                // ignore
-            }
-        }
         InternshipStatus status;
         try {
             status = InternshipStatus.valueOf(statusStr);
         } catch (IllegalArgumentException e) {
             throw new CustomException("Statut invalide: " + statusStr, HttpStatus.BAD_REQUEST);
         }
-        return ResponseEntity.ok(stageInscriptionService.updateInscriptionStatus(id, status, notes, supervisorId));
+        return ResponseEntity.ok(stageInscriptionService.updateInscriptionStatus(id, status, notes));
     }
 
     // ─── ADMIN : Récupérer la liste des formateurs ───────────────────────────
@@ -135,12 +127,6 @@ public class StageInscriptionController {
 
     // ─── FORMATEUR : Voir les stagiaires de stage facultatif assignés ────────
 
-    @GetMapping("/api/formateur/stage-inscriptions")
-    public ResponseEntity<List<StageInscriptionDTO>> getSupervisedInscriptions(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        User formateur = getAuthenticatedUser(userDetails);
-        return ResponseEntity.ok(stageInscriptionService.getInscriptionsBySupervisor(formateur.getId()));
-    }
 
     // ─── ADMIN : Clôturer le stage & générer attestation PDF ──────────────────
 

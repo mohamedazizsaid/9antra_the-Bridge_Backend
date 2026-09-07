@@ -121,10 +121,6 @@ public class StageInscription {
     // ─── Timestamps ────────────────────────────────────────────────────────────
     private LocalDate createdAt;
 
-    // ─── Encadrant / Formateur Assigné ─────────────────────────────────────
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supervisor_id")
-    private User supervisor;
 
     // ─── Relation stagiaire ────────────────────────────────────────────────
     @ManyToOne(fetch = FetchType.LAZY)

@@ -19,7 +19,6 @@ public interface StageInscriptionRepository extends JpaRepository<StageInscripti
 
     List<StageInscription> findByStudentEmail(String email);
 
-    List<StageInscription> findBySupervisorId(int supervisorId);
 
     boolean existsByStudentId(int studentId);
 }

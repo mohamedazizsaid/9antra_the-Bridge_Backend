@@ -32,9 +32,9 @@ public interface StageInscriptionService {
     StageInscriptionDTO getInscriptionById(Long id);
 
     /**
-     * [ADMIN] Met à jour le statut d'une inscription (APPROVED, REJECTED, etc.) et assigne éventuellement un formateur encadrant.
+     * [ADMIN] Met à jour le statut d'une inscription (APPROVED, REJECTED, etc.).
      */
-    StageInscriptionDTO updateInscriptionStatus(Long id, InternshipStatus status, String notes, Integer supervisorId);
+    StageInscriptionDTO updateInscriptionStatus(Long id, InternshipStatus status, String notes);
 
     /**
      * [ADMIN] Confirme un paiement manuel (MAIN_A_MAIN ou BANQUE).
@@ -46,10 +46,6 @@ public interface StageInscriptionService {
      */
     StageInscriptionDTO updatePaymentStatus(Long id, boolean paid);
 
-    /**
-     * [FORMATEUR] Récupère les inscriptions de stages facultatifs assignées à ce formateur.
-     */
-    List<StageInscriptionDTO> getInscriptionsBySupervisor(int supervisorId);
 
     /**
      * [ADMIN] Clôture un stage (COMPLETED), génère le PDF d'attestation professionnelle

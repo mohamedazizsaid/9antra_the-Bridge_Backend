@@ -59,16 +59,11 @@ public class StageInscriptionDTO {
     private String stripePaymentUrl;
     private boolean stripePaymentConfirmed;
 
-    // Admin & Encadrant
+    // Admin
     private InternshipStatus status;
     private String adminNotes;
     private boolean adminPaymentConfirmed;
     private LocalDate adminPaymentDate;
-    private Integer supervisorId;
-    private String supervisorFirstName;
-    private String supervisorLastName;
-    private String supervisorEmail;
-    private String supervisorAvatar;
 
     // Source
     private String heardFrom;
