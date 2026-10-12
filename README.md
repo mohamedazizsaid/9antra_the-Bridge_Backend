@@ -127,9 +127,9 @@
 - **Cycle de Vie des Comptes & OTP** : Inscription avec confirmation par code OTP email à 6 chiffres, réexpédition et expiration de codes.
 - **Réinitialisation de Mot de Passe Sécurisée** : Workflow complet de réinitialisation avec codes éphémères à usage unique.
 - **Contrôle d'Accès Basé sur les Rôles (RBAC)** :
-  - `ROLE_ETUDIANT` (Stagiaire)
-  - `ROLE_FORMATEUR` (Enseignant / Instructeur)
-  - `ROLE_ADMIN` (Gestionnaire de la plateforme)
+  - `STAGIAIRE` — apprenant inscrit à des formations ou stages
+  - `FORMATEUR` — instructeur gérant ses formations et évaluant ses stagiaires
+  - `ADMIN` — gestionnaire de la plateforme avec accès total
 - **Protection Anti-Abus & Rate Limiting** : Filtrage distribué via **Bucket4j** et **Redis** pour contrer le bruteforce, le credential stuffing et les surcharges API.
 - **Sécurité HTTP Durcie** : CSP (*Content Security Policy*), protection XSS active, blocage anti-clickjacking via *FrameOptions*, gestion granulaire CORS et headers de corrélation (`X-Correlation-ID`).
 - **Endpoint Monitoring Isolé** : Endpoint `/actuator/prometheus` sécurisé par authentification HTTP Basic dédiée (`ROLE_MONITORING`).
@@ -145,11 +145,14 @@
 - **Affectation des Formateurs** : Assignation d'instructeurs qualifiés à chaque promotion ou session live.
 - **Suivi des Places Disponibles** : Calcul automatique en temps réel des places restantes lors des inscriptions.
 
-### 4. Inscriptions & Moteur de Progression
-- **Workflow d'Inscription** : Gestion des inscriptions gratuites ou soumises à paiement préalable.
-- **Suivi Granulaire de la Progression** : Enregistrement de l'état d'avancement leçon par leçon pour chaque apprenant.
-- **Calcul Dynamique du Taux de Complétion** : Calcul en temps réel du pourcentage global d'avancement de la formation.
-- **Déclenchement d'Éligibilité au Certificat** : Déblocage automatique des évaluations finales et des certifications dès 100% de progression atteinte.
+### 4. Onboarding, Inscriptions & Moteur de Progression
+- **Workflow d'Onboarding Multi-Cas** : Trois parcours distincts selon la demande du stagiaire :
+  - **Formation simple** (1 formation) → `Enrollment APPROVED` + échéances de paiement par `Phase`
+  - **Combo multi-formations** (≥2) → `ComboEnrollment` avec remise progressive (10% base, +5%/formation, max 40%) + paiement Stripe global
+  - **Stage facultatif** → `StageInscription` avec upload PDFs (Cloudinary) → workflow de validation admin
+- **Durée Personnalisée** : Un stagiaire peut demander une durée `customDurationWeeks` avec message de motivation ; le formateur approuve ou refuse.
+- **Parrainage (Referral)** : Système de remise -10% appliqué au parrain lors d'une nouvelle inscription parrainée.
+- **Suivi de Progression** : Enregistrement phase par phase via `ProgressionService.checkAndUpdateProgress()`, déclenchant automatiquement la certification si `minimumAttendance` et `minimumGrade` sont atteints.
 
 ### 5. Suivi des Présences & Évaluations
 - **Feuille de Présence Numérique** : Enregistrement des présences/absences par session pour chaque apprenant.
@@ -309,63 +312,111 @@ docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 ## 📖 Documentation de l'API (Swagger)
 
 L'API est intégralement documentée via **OpenAPI 3 / Swagger**. Accédez à l'interface interactive sur :
-👉 `http://localhost:8080/swagger-ui/index.html`
+👉 `http://localhost:8080/swagger-ui.html` (local) ou [`Swagger Production`](https://nineantra-the-bridge-backend.onrender.com/swagger-ui/index.html)
 
 ### Points d'Entrée Principaux
 
 #### 🔐 Authentification & Profil (`/api/auth`, `/api/users`)
 | Méthode | Endpoint | Description | Accès |
 |---|---|---|---|
-| `POST` | `/api/auth/register` | Inscription d'un nouveau stagiaire (multipart avec avatar) | Public |
-| `POST` | `/api/auth/login` | Connexion et émission du token JWT | Public |
-| `POST` | `/api/auth/verify-email` | Validation du code OTP à 6 chiffres | Public |
-| `POST` | `/api/auth/resend-code` | Renvoi d'un nouveau code de validation OTP | Public |
-| `POST` | `/api/auth/forgot-password` | Demande de réinitialisation de mot de passe | Public |
-| `POST` | `/api/auth/reset-password` | Application du nouveau mot de passe avec code | Public |
-| `POST` | `/api/auth/oauth/login` | Authentification sociale (Google / Facebook) | Public |
-| `GET` | `/api/users/me` | Récupération du profil de l'utilisateur connecté | Authentifié |
-| `PUT` | `/api/users/profile` | Mise à jour des informations de profil | Authentifié |
+| `POST` | `/api/auth/register` | Inscription multipart (JSON + avatar Cloudinary) | Public |
+| `POST` | `/api/auth/verify-email` | Validation du code OTP 6 chiffres | Public |
+| `POST` | `/api/auth/resend-code` | Renvoi OTP | Public |
+| `POST` | `/api/auth/login` | Connexion → JWT stateless | Public |
+| `POST` | `/api/auth/logout` | Déconnexion | Authentifié |
+| `POST` | `/api/auth/forgot-password` | Demande reset mot de passe | Public |
+| `POST` | `/api/auth/reset-password` | Reset avec token | Public |
+| `POST` | `/api/auth/oauth/login` | Login OAuth2 (Google / Facebook) | Public |
+| `GET` | `/api/auth/oauth-config` | Config OAuth2 côté client | Public |
+| `GET` | `/api/users/me` | Profil de l'utilisateur connecté | Authentifié |
 
-#### 🎓 Formations & Sessions (`/api/formations`, `/api/sessions`)
+#### 🎓 Formations & Phases (`/api/formations`)
 | Méthode | Endpoint | Description | Accès |
 |---|---|---|---|
-| `GET` | `/api/formations` | Liste paginée des formations avec filtres | Public |
-| `GET` | `/api/formations/{id}` | Détail complet d'une formation et son plan | Public |
-| `POST` | `/api/formations` | Création d'une nouvelle formation | Formateur / Admin |
-| `PUT` | `/api/formations/{id}` | Modification d'une formation existante | Formateur / Admin |
-| `DELETE` | `/api/formations/{id}` | Suppression d'une formation | Admin |
-| `GET` | `/api/sessions` | Calendrier des sessions ouvertes | Authentifié |
-| `POST` | `/api/sessions` | Création d'une session de cours | Formateur / Admin |
+| `GET` | `/api/formations` | Liste toutes les formations (archivées exclues) | Authentifié |
+| `GET` | `/api/formations/{id}` | Détail formation + phases + sessions | Authentifié |
+| `POST` | `/api/formations` | Créer une nouvelle formation | Admin / Formateur |
+| `PUT` | `/api/formations/{id}` | Modifier une formation | Admin / Formateur |
+| `DELETE` | `/api/formations/{id}` | Archiver (soft-delete) | Admin |
+| `POST` | `/api/formations/{id}/phases` | Ajouter une phase à une formation | Admin / Formateur |
+| `PUT` | `/api/formations/{id}/phases/{phaseId}` | Modifier une phase | Admin / Formateur |
 
-#### 📈 Inscriptions & Progression (`/api/enrollments`, `/api/progressions`)
+#### 🧭 Onboarding & Stages (`/api/onboarding`)
 | Méthode | Endpoint | Description | Accès |
 |---|---|---|---|
-| `POST` | `/api/enrollments` | Inscription à une formation ou session | Étudiant |
-| `GET` | `/api/enrollments/my-enrollments` | Liste des inscriptions de l'apprenant connecté | Étudiant |
-| `GET` | `/api/progressions/{formationId}` | Taux d'avancement et leçons complétées | Étudiant |
-| `POST` | `/api/progressions/lesson/{lessonId}/complete` | Marquer une leçon comme complétée | Étudiant |
+| `POST` | `/api/onboarding/submit` | Soumettre onboarding complet (multipart : JSON + PDFs) | Stagiaire |
+| `GET` | `/api/onboarding/my` | Mon inscription courante | Stagiaire |
+| `GET` | `/api/onboarding/my/history` | Historique de mes stages facultatifs | Stagiaire |
+| `POST` | `/api/onboarding/stage/{id}/stripe-checkout` | Créer session Stripe pour stage | Stagiaire |
+| `GET` | `/api/onboarding/stage/stripe/verify` | Vérifier paiement Stripe stage | Public |
 
-#### ⛓️ Certificats & Blockchain (`/api/certificates`)
+#### 🛒 Combo Multi-Formations (`/api/combo-enrollments`)
 | Méthode | Endpoint | Description | Accès |
 |---|---|---|---|
-| `GET` | `/api/certificates/my-certificates` | Liste des diplômes obtenus par l'étudiant | Étudiant |
-| `GET` | `/api/certificates/download/{id}` | Téléchargement du diplôme PDF haute définition | Authentifié |
-| `GET` | `/api/certificates/verify/{certificateCode}` | Vérification publique de validité d'un diplôme | Public |
-| `POST` | `/api/certificates/generate/{formationId}` | Génération et ancrage on-chain Polygon | Formateur / Admin |
+| `GET` | `/api/combo-enrollments/my` | Mes combos en cours | Stagiaire |
+| `POST` | `/api/combo-enrollments/{id}/stripe-checkout` | Session Stripe pour combo | Stagiaire |
+| `GET` | `/api/combo-enrollments/stripe/verify` | Vérifier paiement Stripe combo | Public |
 
-#### 💳 Paiements Stripe (`/api/payments`)
+#### 📋 Enrollments (`/api/enrollments`)
 | Méthode | Endpoint | Description | Accès |
 |---|---|---|---|
-| `POST` | `/api/payments/create-intent` | Création d'un `PaymentIntent` Stripe | Étudiant |
-| `POST` | `/api/payments/stripe/webhook` | Réception asynchrone des événements Stripe | Stripe Server (Signature) |
+| `GET` | `/api/enrollments/my` | Mes inscriptions aux formations | Stagiaire |
+| `POST` | `/api/enrollments/{id}/custom-duration` | Demander une durée personnalisée | Stagiaire |
+| `PUT` | `/api/enrollments/{id}/respond` | Approuver / Refuser durée custom | Formateur |
+| `GET` | `/api/enrollments/formation/{id}` | Stagiaires inscrits à une formation | Formateur / Admin |
+
+#### ✅ Présences & Évaluations (`/api/attendance`, `/api/evaluations`)
+| Méthode | Endpoint | Description | Accès |
+|---|---|---|---|
+| `POST` | `/api/attendance` | Enregistrer présence d'un stagiaire | Formateur |
+| `GET` | `/api/attendance/session/{id}` | Présences d'une séance | Formateur / Admin |
+| `POST` | `/api/evaluations` | Attribuer une note à un stagiaire | Formateur |
+| `GET` | `/api/evaluations/phase/{id}` | Notes d'une phase | Formateur / Admin |
+
+#### 📈 Progression & Certificats (`/api/progression`, `/api/certificates`)
+| Méthode | Endpoint | Description | Accès |
+|---|---|---|---|
+| `GET` | `/api/progression/my` | Ma progression par phase | Stagiaire |
+| `POST` | `/api/progression/check` | Vérifier et mettre à jour la progression | Formateur |
+| `GET` | `/api/certificates/student/{id}` | Certificats d'un stagiaire | Authentifié |
+| `POST` | `/api/certificates/generate` | Générer certificat PDF + ancrage Polygon | Admin / Formateur |
+| `GET` | `/api/certificates/verify/{number}` | Vérifier authenticité d'un certificat | Public |
+
+#### 💳 Paiements & Stripe (`/api/payments`)
+| Méthode | Endpoint | Description | Accès |
+|---|---|---|---|
+| `GET` | `/api/payments/enrollment/{id}` | Paiements d'un enrollment | Authentifié |
+| `POST` | `/api/payments/stripe/webhook` | Webhook Stripe (signature vérifiée) | Public (Stripe) |
+| `GET` | `/api/payments/stripe/verify` | Vérifier session Stripe | Public |
 
 #### 📊 Administration (`/api/admin`)
 | Méthode | Endpoint | Description | Accès |
 |---|---|---|---|
-| `GET` | `/api/admin/users` | Gestion et liste exhaustive des utilisateurs | Admin |
-| `PUT` | `/api/admin/users/{id}/role` | Modification du rôle d'un utilisateur | Admin |
-| `GET` | `/api/admin/stats` | Indicateurs de performance et KPIs globaux | Admin |
-| `GET` | `/api/admin/revenue` | Statistiques de revenus Stripe consolidées | Admin |
+| `GET` | `/api/admin/dashboard-stats` | KPIs : stagiaires, formations, revenus | Admin |
+| `GET` | `/api/admin/stage-inscriptions` | Toutes les candidatures stage | Admin |
+| `PATCH` | `/api/admin/stage-inscriptions/{id}/status` | Valider / Refuser candidature | Admin |
+| `PATCH` | `/api/admin/stage-inscriptions/{id}/confirm-payment` | Confirmer paiement manuel | Admin |
+| `POST` | `/api/admin/stage-inscriptions/{id}/cloturer` | Clôturer stage + attestation PDF | Admin |
+| `GET` | `/api/admin/users` | Liste tous les utilisateurs | Admin |
+| `POST` | `/api/admin/users` | Créer un formateur ou admin | Admin |
+| `GET` | `/api/admin/formateurs` | Liste des formateurs | Admin |
+| `GET` | `/api/admin/audit-logs` | Journaux d'activité HTTP | Admin |
+| `POST` | `/api/admin/broadcast` | Diffuser notification à tous | Admin |
+
+#### 🔔 Notifications & Sessions (`/api/notifications`, `/api/sessions`)
+| Méthode | Endpoint | Description | Accès |
+|---|---|---|---|
+| `GET` | `/api/notifications/my` | Mes notifications | Authentifié |
+| `PUT` | `/api/notifications/{id}/read` | Marquer comme lue | Authentifié |
+| `GET` | `/api/sessions/formation/{id}` | Séances d'une formation | Authentifié |
+| `POST` | `/api/sessions` | Créer une séance | Formateur / Admin |
+
+#### 🏥 Santé & Monitoring
+| Méthode | Endpoint | Description | Accès |
+|---|---|---|---|
+| `GET` | `/api/health` | Health check applicatif | Public |
+| `GET` | `/actuator/health` | Spring Actuator health | Public |
+| `GET` | `/actuator/prometheus` | Métriques Prometheus | HTTP Basic (MONITORING) |
 
 ---
 
